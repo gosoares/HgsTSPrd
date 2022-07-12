@@ -1,0 +1,8 @@
+.vscode/
+output*/
+instances/testSet
+scripts/instances/
+.ipynb_checkpoints
+__pycache__
+build/
+*_.ipynb
