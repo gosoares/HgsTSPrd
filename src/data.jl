@@ -1,24 +1,28 @@
 struct AlgParams
     mu::Int         # minimum size of the population
     lambda::Int     # maximum number of additional individuals in the population
-    nb_elite::Int   # number of elite individuals for the biased fitness
-    n_close::Int    # number of closest indivials to consider when calculating the diversity
-    it_ni::Int      # max iterations without improvement to stop the algorithm
-    it_div::Int     # iterations without improvement to diversify
-    time_limit::Int # in seconds
+    nbelite::Int   # number of elite individuals for the biased fitness
+    nclose::Int    # number of closest indivials to consider when calculating the diversity
+    itni::Int      # max iterations without improvement to stop the algorithm
+    itdiv::Int     # iterations without improvement to diversify
+    timelimit::Int # in seconds
     seed::UInt32    # seed for RNG
 end
 
-struct Data{V}
-    # V: how many vertices
-    N::Int                                  # how many vertices and how many clients (V-1 )
-    times_matrix::NTuple{V,NTuple{V,Int}}   # times matrix
-    release_dates::NTuple{V,Int}            # release date of each vertex
+struct Data{V,N} # V,N: how many vertices and clients (V-1) 
+    timesmatrix::NTuple{V,NTuple{V,Int}}   # times matrix
+    releasedates::NTuple{V,Int}            # release date of each vertex
     params::AlgParams                       # algorithm params
-    start_time::Int                         # starting time of algorithm
+    starttime::Int                         # starting time of algorithm
     rng::Xoshiro                            # random number generator
-    output_file::String                     # Path of the file to save results
+    outputfile::String                     # Path of the file to save results
 end
+
+const INF = typemax(Int) ÷ 2
+
+@inline releasedate(data::Data, v::Int) = data.releasedates[v]
+@inline timet(data::Data, v1::Int, v2::Int) = data.timesmatrix[v1][v2]
+@inline timesfrom(data, v) = data.times_matrix[v]
 
 function Data(args::Vector{String})
     s = ArgParseSettings(; prog = "HGS_TSPRD")
@@ -47,69 +51,68 @@ function Data(args::Vector{String})
         parsed_args["s"]::UInt32,
     )
 
-    input_file = parsed_args["instance_file"]::String
-    output_file = parsed_args["o"]::String
+    inputfile = parsed_args["instance_file"]::String
+    outputfile = parsed_args["o"]::String
 
-    if !isfile(input_file)
-        throw(ArgumentError("File not found: $input_file"))
+    if !isfile(inputfile)
+        throw(ArgumentError("File not found: $inputfile"))
     end
 
-    V, times_matrix, release_dates = open(input_file, "r") do file
+    V, timesmatrix, releasedates = open(inputfile, "r") do file
         first_char = peek(file, Char)
 
         if first_char == '<'
-            return read_coordinates_list_instance(file)
+            return read_coords(file)
         elseif first_char == 'N'
-            return read_distance_matrix_instance(file)
+            return read_distance_matrix(file)
         else
             throw(ArgumentError("Unknown instance file format"))
         end
     end
 
-    floyd_warshall(times_matrix)
+    floydwarshall(timesmatrix)
 
-    return Data{V}(
-        V - 1,
-        ntuple(i -> ntuple(j -> times_matrix[i, j], V), V),
-        ntuple(i -> release_dates[i], V),
+    return Data{V,V - 1}(
+        ntuple(i -> ntuple(j -> timesmatrix[i, j], V), V),
+        ntuple(i -> releasedates[i], V),
         params,
         time_ns(),
         Xoshiro(params.seed),
-        output_file,
+        outputfile,
     )
 end
 
-function read_coordinates_list_instance(file::IO)
+function read_coords(file::IO)
     readuntil(file, "<DIMENSION> ")
     V = parse(Int, readline(file))
 
     readuntil(file, "</VERTICES>")
     readline(file)
 
-    X, Y, release_dates = Int[], Int[], Int[]
+    X, Y, releasedates = Int[], Int[], Int[]
     for _ in 1:V
         values = split(readline(file))
         push!(X, parse(Int, values[1]))
         push!(Y, parse(Int, values[2]))
-        push!(release_dates, parse(Int, values[7]))
+        push!(releasedates, parse(Int, values[7]))
     end
 
-    times_matrix = Matrix{Int}(undef, V, V)
+    timesmatrix = Matrix{Int}(undef, V, V)
 
     for i in 1:V
-        times_matrix[i, i] = 0
+        timesmatrix[i, i] = 0
 
         for j in i:V
             a = X[i] - X[j]
             b = Y[i] - Y[j]
-            times_matrix[i, j] = times_matrix[j, i] = floor(sqrt(a * a + b * b) + 0.5)
+            timesmatrix[i, j] = timesmatrix[j, i] = floor(sqrt(a * a + b * b) + 0.5)
         end
     end
 
-    return V, times_matrix, release_dates
+    return V, timesmatrix, releasedates
 end
 
-function read_distance_matrix_instance(file::IO)
+function read_distance_matrix(file::IO)
     readuntil(file, "DIMENSION: ")
     V = parse(Int, readline(file))
     readuntil(file, "EDGE_WEIGHT_SECTION")
@@ -121,7 +124,7 @@ function read_distance_matrix_instance(file::IO)
     return V, times_matrix, release_dates
 end
 
-function floyd_warshall(matrix::Matrix{Int})
+function floydwarshall(matrix::Matrix{Int})
     for k in 1:size(matrix)[1]
         for i in 1:size(matrix)[1]
             for j in 1:size(matrix)[1]
