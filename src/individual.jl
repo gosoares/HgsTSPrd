@@ -99,3 +99,6 @@ end
 
 @inline Base.getindex(indiv::Individual, idx::Integer) = indiv.gianttour[idx]
 @inline Base.setindex!(indiv::Individual, value::Int, pos::Integer) = (indiv.gianttour[pos] = value)
+
+@inline Base.iterate(indiv::Individual) = (indiv[2], 3)
+@inline Base.iterate(indiv::Individual, state) = iterate(indiv.gianttour, state)

@@ -1,12 +1,15 @@
 module HgsTSPrd
 
-using Random
+using IterTools, Printf, Random
 
 include("data.jl")
 include("individual.jl")
 include("split.jl")
 include("population.jl")
-include("localsearch.jl")
+include("localsearch/vertex.jl")
+include("localsearch/route.jl")
+include("localsearch/localsearch.jl")
+include("localsearch/intrasearches.jl")
 include("genetic.jl")
 
 function main(args::Vector{String})
@@ -24,6 +27,24 @@ function main(args::Vector{String})
     println("Solution Time  : $bestsoltime ms")
     println("Obj            : $(ga.population.bestsolution.eval)")
     println("Seed           : $(data.params.seed)")
+
+    # println()
+    # individual = RandomIndividual(data)
+    # split = Split(data)
+    # split!(split, individual)
+
+    # @show individual.gianttour
+    # @show individual.successors
+    # @show individual.predecessors
+
+    # ls = LocalSearch(data, split)
+    # loadindividual!(ls, individual)
+    # saveindividual!(ls, individual)
+    # println()
+
+    # @show individual.gianttour
+    # @show individual.successors
+    # @show individual.predecessors
 
     return nothing
 end

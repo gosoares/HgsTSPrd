@@ -23,7 +23,7 @@ function run!(ga::GeneticAlgorithm{V}) where {V}
         offspring = ordercrossover(ga)
         split!(ga.split, offspring)
 
-        educate(ga.localsearch, offspring)
+        educate!(ga.localsearch, offspring)
         improved = addindividual!(ga.population, offspring)
 
         if improved

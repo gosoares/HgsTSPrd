@@ -26,12 +26,12 @@ function split!(split::Split{V}, indiv::Individual{V}) where {V}
 
     for j in 2:V
         rdposj = split.rdpos[j]
-        jtodepot = timet(split.data, indiv[j], 1)
+        jtodepot = arctime(split.data, indiv[j], 1)
         cumulj = split.cumulative[j]
         sigma = releasedate(split.data, indiv[rdposj])
 
         for i in 2:split.rdpos[j]
-            deltaj = sigma + timet(split.data, 1, indiv[i]) + (cumulj - split.cumulative[i]) + jtodepot
+            deltaj = sigma + arctime(split.data, 1, indiv[i]) + (cumulj - split.cumulative[i]) + jtodepot
             if deltaj < split.phi[j]
                 split.phi[j] = deltaj
                 split.bestin[j] = i
@@ -51,7 +51,7 @@ end
     for c in 3:V
         (releasedate(split.data, indiv[c]) > releasedate(split.data, indiv[rdpos])) && (rdpos = c)
         split.rdpos[c] = rdpos
-        split.cumulative[c] = split.cumulative[c - 1] + timet(split.data, indiv[c - 1], indiv[c])
+        split.cumulative[c] = split.cumulative[c - 1] + arctime(split.data, indiv[c - 1], indiv[c])
     end
     return nothing
 end
