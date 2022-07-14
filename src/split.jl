@@ -44,11 +44,11 @@ function split!(split::Split{V}, indiv::Individual{V}) where {V}
 end
 
 @inline function load!(split::Split{V}, indiv::Individual{V}) where {V}
-    split.rdpos[1] = 0
-    split.cumulative[1] = 0
-
     rdpos = 2
-    for c in 2:V
+    split.rdpos[2] = rdpos
+    split.cumulative[2] = 0
+
+    for c in 3:V
         (releasedate(split.data, indiv[c]) > releasedate(split.data, indiv[rdpos])) && (rdpos = c)
         split.rdpos[c] = rdpos
         split.cumulative[c] = split.cumulative[c - 1] + timet(split.data, indiv[c - 1], indiv[c])
@@ -59,17 +59,17 @@ end
 @inline function save!(split::Split{V}, indiv::Individual{V}) where {V}
     indiv.predecessors[1] = indiv.giantTour[V]  # predecessor of depot is the last client
     indiv.successors[1] = indiv.giantTour[2]    # successor of depot is the first client
-    indiv.predecessors[indiv.giantTour[1]] = 1  # predecessor of first client is the depot
+    indiv.predecessors[indiv.giantTour[2]] = 1  # predecessor of first client is the depot
     indiv.successors[indiv.giantTour[V]] = 1    # successor of the last client is the depot
 
-    nextdepot = split.bestin[V] - 1
-    for i in (V - 1):2
+    nextdepot = split.bestin[V] - 1 # position that has a depot after it
+    for i in (V - 1):-1:2
         if i == nextdepot
             indiv.predecessors[indiv.giantTour[i + 1]] = 1
-            indiv.successors[indiv.giantTour[i]] = 0
-            nextdepot = split.bestin[i] - 1
+            indiv.successors[indiv.giantTour[i]] = 1
+            nextdepot = split.bestin[nextdepot] - 1
         else
-            indiv.predecessor[indiv.giantTour[i + 1]] = indiv.giantTour[i]
+            indiv.predecessors[indiv.giantTour[i + 1]] = indiv.giantTour[i]
             indiv.successors[indiv.giantTour[i]] = indiv.giantTour[i + 1]
         end
     end

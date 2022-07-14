@@ -9,7 +9,7 @@ struct AlgParams
     seed::UInt32    # seed for RNG
 end
 
-struct Data{V,N} # V,N: how many vertices and clients (V-1) 
+struct Data{V} # V,N: how many vertices and clients (V-1) 
     timesmatrix::NTuple{V,NTuple{V,Int}}   # times matrix
     releasedates::NTuple{V,Int}            # release date of each vertex
     params::AlgParams                       # algorithm params
@@ -72,7 +72,7 @@ function Data(args::Vector{String})
 
     floydwarshall(timesmatrix)
 
-    return Data{V,V - 1}(
+    return Data{V}(
         ntuple(i -> ntuple(j -> timesmatrix[i, j], V), V),
         ntuple(i -> releasedates[i], V),
         params,
