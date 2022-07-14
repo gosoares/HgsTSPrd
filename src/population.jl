@@ -41,18 +41,18 @@ function addindividual!(pop::Population{V}, indiv::Individual{V}) where {V}
 
     # Find the position for the individual such that the population is ordered
     # in respect to the solution eval
-    pos = searchsortedlast(pop.individuals, indiv; by = idv -> idv.eval, rev = true)
+    pos = searchsortedlast(pop.individuals, indiv; by = idv -> idv.eval, rev = false)
     insert!(pop.individuals, pos + 1, indiv)
+
+    if length(pop.individuals) > (pop.data.params.mu + pop.data.params.lambda)
+        survival!(pop)
+    end
 
     # Update the best solution
     if indiv.eval < pop.bestsolution.eval
         pop.bestsolution = indiv
-        push!(pop.searchprogress, (elapsedtime(pop.data) => indiv.eval))
+        push!(pop.searchprogress, (time_ns() => indiv.eval))
         return true
-    end
-
-    if length(pop.individuals) > (pop.data.params.mu + pop.data.params.lambda)
-        survival!(pop)
     end
 
     return false
