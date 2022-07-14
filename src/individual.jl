@@ -1,6 +1,6 @@
 mutable struct Individual{V}
     eval::Int # completion time of last route
-    giantTour::MVector{V,Int} # element at position 1 is a sentinel
+    gianttour::MVector{V,Int} # element at position 1 is a sentinel
     successors::MVector{V,Int}
     predecessors::MVector{V,Int}
     closest::Vector{Pair{Float64,Individual}}
@@ -8,10 +8,10 @@ mutable struct Individual{V}
 end
 
 function RandomIndividual(data::Data{V}) where {V}
-    giantTour = StaticArrays.sacollect(MVector{V,Int}, i for i in 1:V)
-    shuffle!(data.rng, view(giantTour, 2:V))
+    gianttour = StaticArrays.sacollect(MVector{V,Int}, i for i in 1:V)
+    shuffle!(data.rng, view(gianttour, 2:V))
 
-    return Individual{V}(INF, giantTour, MVector{V,Int}(undef), MVector{V,Int}(undef), Pair{Float64,Individual}[], Inf)
+    return Individual{V}(INF, gianttour, MVector{V,Int}(undef), MVector{V,Int}(undef), Pair{Float64,Individual}[], Inf)
 end
 
 function EmptyIndividual(::Data{V}) where {V}
@@ -97,5 +97,5 @@ function distance(indiv1::Individual{V}, indiv2::Individual{V}) where {V}
     return 1.0 - I / U
 end
 
-@inline Base.getindex(indiv::Individual, idx::Integer) = indiv.giantTour[idx]
-@inline Base.setindex!(indiv::Individual, value::Int, pos::Integer) = (indiv.giantTour[pos] = value)
+@inline Base.getindex(indiv::Individual, idx::Integer) = indiv.gianttour[idx]
+@inline Base.setindex!(indiv::Individual, value::Int, pos::Integer) = (indiv.gianttour[pos] = value)

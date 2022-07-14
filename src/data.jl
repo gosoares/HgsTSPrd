@@ -24,7 +24,7 @@ const INF = typemax(Int) ÷ 2
 @inline timesfrom(data, v) = data.times_matrix[v]
 
 function Data(args::Vector{String})
-    s = ArgParseSettings(; prog = "HGS_TSPRD")
+    s = ArgParseSettings(; prog = "HgsTSPrd")
     @add_arg_table s begin
         ("instance_file"; help = "File for the instance to run"; arg_type = String; required = true)
         ("-o"; help = "Output file to save results"; arg_type = String; default = "")

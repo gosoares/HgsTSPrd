@@ -57,20 +57,20 @@ end
 end
 
 @inline function save!(split::Split{V}, indiv::Individual{V}) where {V}
-    indiv.predecessors[1] = indiv.giantTour[V]  # predecessor of depot is the last client
-    indiv.successors[1] = indiv.giantTour[2]    # successor of depot is the first client
-    indiv.predecessors[indiv.giantTour[2]] = 1  # predecessor of first client is the depot
-    indiv.successors[indiv.giantTour[V]] = 1    # successor of the last client is the depot
+    indiv.predecessors[1] = indiv.gianttour[V]  # predecessor of depot is the last client
+    indiv.successors[1] = indiv.gianttour[2]    # successor of depot is the first client
+    indiv.predecessors[indiv.gianttour[2]] = 1  # predecessor of first client is the depot
+    indiv.successors[indiv.gianttour[V]] = 1    # successor of the last client is the depot
 
     nextdepot = split.bestin[V] - 1 # position that has a depot after it
     for i in (V - 1):-1:2
         if i == nextdepot
-            indiv.predecessors[indiv.giantTour[i + 1]] = 1
-            indiv.successors[indiv.giantTour[i]] = 1
+            indiv.predecessors[indiv.gianttour[i + 1]] = 1
+            indiv.successors[indiv.gianttour[i]] = 1
             nextdepot = split.bestin[nextdepot] - 1
         else
-            indiv.predecessors[indiv.giantTour[i + 1]] = indiv.giantTour[i]
-            indiv.successors[indiv.giantTour[i]] = indiv.giantTour[i + 1]
+            indiv.predecessors[indiv.gianttour[i + 1]] = indiv.gianttour[i]
+            indiv.successors[indiv.gianttour[i]] = indiv.gianttour[i + 1]
         end
     end
 

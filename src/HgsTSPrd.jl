@@ -1,4 +1,4 @@
-module HGS_TSPRD
+module HgsTSPrd
 
 using ArgParse
 using Random
@@ -35,5 +35,8 @@ function warmup(data::Data)
     run!(ga)
     return nothing
 end
+
+export Data, GeneticAlgorithm
+export main, run!
 
 end # module

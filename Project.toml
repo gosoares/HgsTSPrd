@@ -1,4 +1,4 @@
-name = "HGS_TSPRD"
+name = "HgsTSPrd"
 uuid = "c246af2e-84b2-46e6-9b11-271c6c8259d5"
 authors = ["Gabriel Soares <soaresggm@gmail.com>"]
 version = "0.1.0"
