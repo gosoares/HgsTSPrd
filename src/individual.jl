@@ -15,7 +15,7 @@ function RandomIndividual(data::Data{V}) where {V}
 end
 
 function EmptyIndividual(::Data{V}) where {V}
-    return Individual(
+    return Individual{V}(
         INF, MVector{V,Int}(undef), MVector{V,Int}(undef), MVector{V,Int}(undef), Pair{Float64,Individual}[], Inf
     )
 end
@@ -44,7 +44,7 @@ function insertclosest!(indiv::Individual, cl::Individual, dist::Float64)
     return nothing
 end
 
-function removefromclosest!(indiv::Individual, cl::Individual)
+function removefromclosest!(indiv::Individual{V}, cl::Individual{V}) where {V}
     pos = findfirst(e -> e[2] == cl, indiv.closest)
     popat!(indiv.closest, pos)
     return nothing
@@ -55,7 +55,7 @@ end
 
 Calculate the average distance of the `nclose` closest individuals to `indiv`.
 """
-function nclosemean(indiv::Individual, nclose::Int)
+function nclosemean(indiv::Individual, nclose::Int)::Float64
     return sum(indiv.closest[i][1] for i in 1:nclose) / nclose
 end
 

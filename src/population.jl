@@ -34,7 +34,7 @@ end
 
 Add a individual to the population, and return whether this individual is the best so far.
 """
-function addindividual!(pop::Population, indiv::Individual)
+function addindividual!(pop::Population{V}, indiv::Individual{V}) where {V}
     for indiv2 in pop.individuals
         insertclosest!(indiv, indiv2)
     end
@@ -120,7 +120,9 @@ function updatebiasedfitness!(pop::Population)
     # since the population is sorted by the eval, the position of a
     # individual in the population is the rank of the fitness for that individual
     # now we calculate the rank of the diversity using the nCloseMean
-    rank = [(-nclosemean(indiv, pop.data.params.nclose), rankfit) for (rankfit, indiv) in enumerate(pop.individuals)]
+    rank::Vector{Tuple{Float64,Int}} = Tuple{Float64,Int}[
+        (-nclosemean(indiv, pop.data.params.nclose), rankfit) for (rankfit, indiv) in enumerate(pop.individuals)
+    ]
     sort!(rank)
 
     for rankdc in eachindex(rank)

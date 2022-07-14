@@ -35,7 +35,7 @@ function run!(ga::GeneticAlgorithm{V}) where {V}
     return nothing
 end
 
-function ordercrossover(ga::GeneticAlgorithm{V}) where {V}
+function ordercrossover(ga::GeneticAlgorithm{V})::Individual{V} where {V}
     parent1, parent2 = selectparents(ga.population)
     offspring = EmptyIndividual(ga.data)
     fill!(ga.copied, false)
