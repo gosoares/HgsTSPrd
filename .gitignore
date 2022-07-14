@@ -7,3 +7,4 @@ __pycache__
 build/
 *_.ipynb
 **/Manifest.toml
+**/profile.pb.gz
