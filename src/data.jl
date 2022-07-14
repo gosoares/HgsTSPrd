@@ -24,6 +24,8 @@ const INF = typemax(Int) ÷ 2
 @inline timet(data::Data, v1::Int, v2::Int) = data.timesmatrix[v1][v2]
 @inline timesfrom(data, v) = data.times_matrix[v]
 
+@inline elapsedtime(data::Data) = (time_ns() - data.starttime)
+
 function Data(args::Vector{String})
     s = ArgParseSettings(; prog = "HGS_TSPRD")
     @add_arg_table s begin
