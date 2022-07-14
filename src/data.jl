@@ -9,7 +9,7 @@ struct AlgParams
     seed::UInt32    # seed for RNG
 end
 
-struct Data{V} # V,N: how many vertices and clients (V-1) 
+struct Data{V} # V: how many vertices
     timesmatrix::NTuple{V,NTuple{V,Int}}   # times matrix
     releasedates::NTuple{V,Int}            # release date of each vertex
     params::AlgParams                       # algorithm params

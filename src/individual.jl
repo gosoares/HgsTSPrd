@@ -98,3 +98,4 @@ function distance(indiv1::Individual{V}, indiv2::Individual{V}) where {V}
 end
 
 @inline Base.getindex(indiv::Individual, idx::Integer) = indiv.giantTour[idx]
+@inline Base.setindex!(indiv::Individual, value::Int, pos::Integer) = (indiv.giantTour[pos] = value)

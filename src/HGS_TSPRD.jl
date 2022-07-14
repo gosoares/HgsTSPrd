@@ -7,16 +7,18 @@ using StaticArrays
 include("data.jl")
 include("individual.jl")
 include("split.jl")
+include("population.jl")
+include("localsearch.jl")
+include("genetic.jl")
 
-function main()
-    data = Data(ARGS)
-    split = Split(data)
+function main(args::Vector{String})
+    data = Data(args)
+    genetic = GeneticAlgorithm(data)
+    run!(genetic)
 
+    exectime = (time_ns() - data.starttime) / 1000000
+    println("Execution Time: $exectime ms")
     return nothing
-end
-
-if abspath(PROGRAM_FILE) == @__FILE__
-    main()
 end
 
 end # module

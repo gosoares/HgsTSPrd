@@ -1,6 +1,6 @@
-mutable struct Population
-    data::Data
-    split::Split
+mutable struct Population{V}
+    data::Data{V}
+    split::Split{V}
 
     individuals::Vector{Individual}
     bestsolution::Individual
@@ -8,11 +8,11 @@ mutable struct Population
     searchprogress::Vector{Pair{Int,Int}}
 end
 
-function Population(data::Data, split::Split)
+function Population(data::Data{V}, split::Split{V}) where {V}
     individuals = Individual[]
     sizehint!(individuals, data.params.mu + data.params.lambda + 1)
 
-    return Population(data, split, individuals, EmptyIndividual(data), Pair{Int,Int}[])
+    return Population{V}(data, split, individuals, EmptyIndividual(data), Pair{Int,Int}[])
 end
 
 """
@@ -51,11 +51,15 @@ function addindividual!(pop::Population, indiv::Individual)
         return true
     end
 
+    if length(pop.individuals) > (pop.data.params.mu + pop.data.params.lambda)
+        survival!(pop)
+    end
+
     return false
 end
 
 """
-    survival(pop, n_survivors = pop.data.params.mu)
+    survival!(pop, n_survivors = pop.data.params.mu)
 
 Eliminate the worst individuals in the population,
 until the population size is `n_survivors`.
@@ -64,8 +68,6 @@ function survival!(pop::Population, n_survivors::Int = pop.data.params.mu)
     while length(pop.individuals) > n_survivors
         removeworst!(pop)
     end
-
-    pop.individuals = pop.individuals[1:(pop.data.params.mu)]
     return pop
 end
 
@@ -118,10 +120,11 @@ function updatebiasedfitness!(pop::Population)
     # since the population is sorted by the eval, the position of a
     # individual in the population is the rank of the fitness for that individual
     # now we calculate the rank of the diversity using the nCloseMean
-    rank = [-nclosemean(indiv, pop.data.params.nclose) => rankfit for (rankfit, indiv) in enumerate(pop.individuals)]
+    rank = [(-nclosemean(indiv, pop.data.params.nclose), rankfit) for (rankfit, indiv) in enumerate(pop.individuals)]
     sort!(rank)
 
-    for (rankdc, (_, rankfit)) in enumerate(rank)
+    for rankdc in eachindex(rank)
+        rankfit = rank[rankdc][2]
         pop.individuals[rankfit].biasedfitness =
             rankfit + (1.0 - pop.data.params.nbelite / length(pop.individuals)) * rankdc
     end
@@ -154,6 +157,6 @@ Remove all but the best `mu/3` individuals from the population and generate
 `2*mu` new individuals randomly.
 """
 function diversify!(pop::Population)
-    survival(pop, pop.data.params.mu / 3)
+    survival!(pop, pop.data.params.mu ÷ 3)
     return initialize!(pop)
 end
