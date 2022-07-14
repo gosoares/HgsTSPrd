@@ -13,7 +13,6 @@ struct Data{V} # V: how many vertices
     timesmatrix::NTuple{V,NTuple{V,Int}}   # times matrix
     releasedates::NTuple{V,Int}            # release date of each vertex
     params::AlgParams                       # algorithm params
-    starttime::Int                         # starting time of algorithm
     rng::Xoshiro                            # random number generator
     outputfile::String                     # Path of the file to save results
 end
@@ -23,8 +22,6 @@ const INF = typemax(Int) ÷ 2
 @inline releasedate(data::Data, v::Int) = data.releasedates[v]
 @inline timet(data::Data, v1::Int, v2::Int) = data.timesmatrix[v1][v2]
 @inline timesfrom(data, v) = data.times_matrix[v]
-
-@inline elapsedtime(data::Data) = (time_ns() - data.starttime)
 
 function Data(args::Vector{String})
     s = ArgParseSettings(; prog = "HGS_TSPRD")
@@ -78,7 +75,6 @@ function Data(args::Vector{String})
         ntuple(i -> ntuple(j -> timesmatrix[i, j], V), V),
         ntuple(i -> releasedates[i], V),
         params,
-        time_ns(),
         Xoshiro(params.seed),
         outputfile,
     )
