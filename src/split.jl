@@ -3,20 +3,20 @@ struct Split{V}
 
     # stores for each position in the big tour which of the previous
     # positions has the first vertex with bigger release date
-    rdpos::MVector{V,Int}
+    rdpos::Vector{Int}
 
     # cumulative of arc times
-    cumulative::MVector{V,Int}
+    cumulative::Vector{Int}
 
     # durint split, stores the origin of the best arc arriving at i
-    bestin::MVector{V,Int}
+    bestin::Vector{Int}
 
     # during the split, stores the value of the best arc arriving at i
-    phi::MVector{V,Int}
+    phi::Vector{Int}
 end
 
 function Split(data::Data{V}) where {V}
-    return Split{V}(data, MVector{V,Int}(undef), MVector{V,Int}(undef), MVector{V,Int}(undef), MVector{V,Int}(undef))
+    return Split{V}(data, Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V))
 end
 
 function split!(split::Split{V}, indiv::Individual{V}) where {V}

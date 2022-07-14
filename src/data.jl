@@ -24,38 +24,7 @@ const INF = typemax(Int) ÷ 2
 @inline timesfrom(data, v) = data.times_matrix[v]
 
 function Data(args::Vector{String})
-    s = ArgParseSettings(; prog = "HgsTSPrd")
-    @add_arg_table s begin
-        ("instance_file"; help = "File for the instance to run"; arg_type = String; required = true)
-        ("-o"; help = "Output file to save results"; arg_type = String; default = "")
-        ("-s"; help = "Seed for the RNG"; arg_type = UInt32; default = rand(UInt32))
-        ("-t"; help = "Time limit"; arg_type = Int; default = 600)
-        ("--mu"; arg_type = Int; default = 20)
-        ("--lambda"; arg_type = Int; default = 40)
-        ("--nbElite"; arg_type = Int; default = 8)
-        ("--nClose"; arg_type = Int; default = 6)
-        ("--itNi"; arg_type = Int; default = 10000)
-        ("--itDiv"; arg_type = Int; default = 4000)
-    end
-    parsed_args = parse_args(args, s)
-
-    params = AlgParams(
-        parsed_args["mu"]::Int,
-        parsed_args["lambda"]::Int,
-        parsed_args["nbElite"]::Int,
-        parsed_args["nClose"]::Int,
-        parsed_args["itNi"]::Int,
-        parsed_args["itDiv"]::Int,
-        parsed_args["t"]::Int,
-        parsed_args["s"]::UInt32,
-    )
-
-    inputfile = parsed_args["instance_file"]::String
-    outputfile = parsed_args["o"]::String
-
-    if !isfile(inputfile)
-        throw(ArgumentError("File not found: $inputfile"))
-    end
+    inputfile, outputfile, params = parseargs(args)
 
     V, timesmatrix, releasedates = open(inputfile, "r") do file
         first_char = peek(file, Char)
@@ -78,6 +47,74 @@ function Data(args::Vector{String})
         Xoshiro(params.seed),
         outputfile,
     )
+end
+
+function parseargs(args::Vector{String})
+    (isempty(args) || length(args) % 2 == 0) && paramserror()
+
+    inputfile = args[1]
+    isfile(inputfile) || paramserror("File not found: $inputfile")
+
+    # default parameters
+    mu = 20
+    lambda = 40
+    nbelite = 8
+    nclose = 6
+    itni = 10000
+    itdiv = 4000
+    timelimit = 600
+    seed = rand(UInt32)
+    outputfile = ""
+
+    try
+        for i in 2:2:length(args)
+            if args[i] == "-t"
+                timelimit = parse(Int, args[i + 1])
+            elseif args[i] == "-s"
+                seed = parse(Int, args[i + 1])
+            elseif args[i] == "-t"
+                outputfile = args[i + 1]
+            elseif args[i] == "--mu"
+                mu = parse(Int, args[i + 1])
+            elseif args[i] == "--lambda"
+                lambda = parse(Int, args[i + 1])
+            elseif args[i] == "--nbelite"
+                nbelite = parse(Int, args[i + 1])
+            elseif args[i] == "--nclose"
+                nclose = parse(Int, args[i + 1])
+            elseif args[i] == "--itni"
+                itni = parse(Int, args[i + 1])
+            elseif args[i] == "--itdiv"
+                itdiv = parse(Int, args[i + 1])
+            else
+                paramserror("Unknown argument: $(args[i])")
+            end
+        end
+    catch e
+        paramserror(sprint(showerror, e))
+    end
+
+    return inputfile, outputfile, AlgParams(mu, lambda, nbelite, nclose, itni, itdiv, timelimit, seed)
+end
+
+function paramserror(detail::String = "")
+    !isempty(detail) && println(detail)
+    println("
+    usage: TSPrd instance_file [args]
+
+    Possible arguments:
+        -t timeLimit          Maximum execution time, in seconds
+        -o outputFile         File to print the execution results
+        -s seed               Numeric value for seeding the RNG
+        --mu                  Minimum size of the population
+        --lambda              Maximum number of additional individuals in the population
+        --nbelite             Number of elite individuals for the biased fitness
+        --nclose              Number of closest indivials to consider when calculating the diversity
+        --itni                Max iterations without improvement to stop the algorithm
+        --itdiv               Iterations without improvement to diversify
+    ")
+    exit(1)
+    return nothing
 end
 
 function read_coords(file::IO)

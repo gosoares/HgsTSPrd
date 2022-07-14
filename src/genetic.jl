@@ -5,14 +5,12 @@ struct GeneticAlgorithm{V}
     population::Population{V}
     itni::Int
 
-    copied::MVector{V,Bool} # mark if each client was copied from parent1 to offspring
+    copied::BitArray # mark if each client was copied from parent1 to offspring
 end
 
 function GeneticAlgorithm(data::Data{V}; itni::Integer = data.params.itni) where {V}
     split = Split(data)
-    return GeneticAlgorithm{V}(
-        data, split, LocalSearch(data, split), Population(data, split), itni, MVector{V,Bool}(undef)
-    )
+    return GeneticAlgorithm{V}(data, split, LocalSearch(data, split), Population(data, split), itni, BitArray(undef, V))
 end
 
 function run!(ga::GeneticAlgorithm{V}) where {V}

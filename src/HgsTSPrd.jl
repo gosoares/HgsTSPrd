@@ -1,8 +1,6 @@
 module HgsTSPrd
 
-using ArgParse
 using Random
-using StaticArrays
 
 include("data.jl")
 include("individual.jl")
