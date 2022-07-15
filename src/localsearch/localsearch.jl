@@ -26,12 +26,44 @@ end
 function educate!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     loadindividual!(ls, indiv)
 
-    improved = intrasearch!(ls)
-    updateroutesdata!(ls)
+    improved = true
+    movetype = 0  # 0: intra, 1: inter, 2: depot
+    notimproved = 0
+
+    while improved
+        while notimproved < 2
+            if movetype == 0
+                improved = intrasearch!(ls)
+            elseif movetype == 1
+                improved = false
+                # improved = intersearch!(ls)
+            elseif movetype == 2
+                improved = false
+                # improved = depotsearch!(ls)
+            end
+
+            movetype = (movetype + 1) % 3
+            if improved
+                updateroutesdata!(ls)
+                notimproved = 0
+            else
+                notimproved += 1
+            end
+        end
+
+        improved = splitsearch(ls, indiv)
+    end
 
     saveindividual!(ls, indiv)
-
     return nothing
+end
+
+function splitsearch(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
+    prevtime = indiv.eval
+    savegianttour!(ls, indiv)
+    split!(ls.split, indiv)
+    loadindividual!(ls, indiv)
+    return indiv.eval < prevtime
 end
 
 function addroute!(ls::LocalSearch, pos::Integer = lastindex(ls.routes) + 1)
@@ -121,6 +153,7 @@ function loadindividual!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     end
     pop!(ls.routes)
 
+    updateroutesdata!(ls)
     return nothing
 end
 
@@ -132,7 +165,7 @@ function saveindividual!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
 
     pos = 2
     for route in ls.routes
-        for c in 2:(lastindex(route.clients) - 1)
+        for c in clientsrange(route)
             indiv.predecessors[route[c]] = route[c - 1]
             indiv.successors[route[c]] = route[c + 1]
             indiv.gianttour[pos] = route[c]
@@ -140,6 +173,17 @@ function saveindividual!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
         end
     end
 
+    return nothing
+end
+
+function savegianttour!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
+    pos = 2
+    for route in ls.routes
+        for c in clientsrange(route)
+            indiv.gianttour[pos] = route[c]
+            pos += 1
+        end
+    end
     return nothing
 end
 
