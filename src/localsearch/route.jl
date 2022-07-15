@@ -6,7 +6,6 @@ A struct that represents a route in the solution
 # Attributes
     - pos: The position of the route in the solution
     - clients: The clients in the route plus a vertex representing the depot at the beggining and at the end
-    - N: number of clients in the route
     - source: A vertex representing the depot at the beggining of the route
     - sink: A vertex representing the depot at the end of the route
     - releasedate: The release date of the route, that it the maximum release date between the clients in the route
@@ -28,8 +27,6 @@ mutable struct Route
     pos::Int
 
     clients::Vector{Vertex}
-    N::Int
-
     source::Vertex
     sink::Vertex
 
@@ -52,6 +49,9 @@ function Route(V::Int)
 end
 
 nclients(r::Route) = length(r.clients) - 2
+
+@inline lastclientidx(r::Route) = lastindex(r.clients) - 1
+@inline clientsrange(r::Route) = 2:lastclientidx(r)
 
 @inline Base.getindex(r::Route, idx::Integer) = r.clients[idx]
 @inline Base.setindex!(r::Route, v::Vertex, idx::Integer) = (r.clients[idx] = v)

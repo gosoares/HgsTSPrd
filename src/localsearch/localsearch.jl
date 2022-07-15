@@ -1,6 +1,6 @@
 using Printf
 
-const N_INTRA = 1 # number of implemented intra searchs
+const N_INTRA = 2 # number of implemented intra searchs
 
 mutable struct LocalSearch{V}
     data::Data{V}
@@ -38,33 +38,6 @@ function educate!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     return nothing
 end
 
-function intrasearch!(ls::LocalSearch{V}) where {V}
-    shuffle!(ls.data.rng, ls.intramovesorder)
-    improvedAny = false
-    improved = false
-
-    for route in ls.routes
-        whichmove = 1
-        while whichmove <= N_INTRA
-            move = ls.intramovesorder[whichmove]
-
-            if move == 1
-                improved = intrarelocation!(ls, route, 1)
-            end
-
-            if improved
-                shuffle!(ls.data.rng, ls.intramovesorder)
-                whichmove = 1
-                improvedAny = true
-            else
-                whichmove += 1
-            end
-        end
-    end
-
-    return improvedAny
-end
-
 function addroute!(ls::LocalSearch, pos::Integer = lastindex(ls.routes) + 1)
     route = isempty(ls.emptyroutes) ? ls.routesPool[length(ls.routes) + 1] : pop!(ls.emptyroutes)
     insert!(ls.routes, pos, route)
@@ -82,9 +55,8 @@ function updateroutesdata!(ls::LocalSearch)
     toremove = []
     for (pos, route) in enumerate(ls.routes)
         route.pos = pos
-        route.N = nclients(route)
 
-        if route.N == 0 # remove empty routes
+        if nclients(route) == 0 # remove empty routes
             push!(toremove, pos)
             continue
         end
