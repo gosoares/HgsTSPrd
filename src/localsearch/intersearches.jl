@@ -12,7 +12,7 @@ function intersearch!(ls::LocalSearch)
         move = ls.intermovesorder[whichmove]
         improved = false
 
-        updateroutesorder(ls)
+        updateroutesorder!(ls)
         for routespair in ls.routesorder
             route1 = ls.routes[routespair[1]]
             route2 = ls.routes[routespair[2]]
@@ -71,7 +71,6 @@ function interrelocation!(data::Data, route1::Route, route2::Route, bsize::Int)
                 route2[pos + 1].durationafter
 
             if evaluateinterroutemove(route1, route2)
-                # println("improved")
                 block = splice!(route1.clients, c:(c + bsize - 1))
                 splice!(route2.clients, (pos + 1):pos, block)
                 return true
@@ -167,7 +166,7 @@ function evaluateinterroutemove(route1::Route, route2::Route)
     return newr2end < route2.endtime
 end
 
-function updateroutesorder(ls::LocalSearch)
+function updateroutesorder!(ls::LocalSearch)
     if ls.nb_routesorder != length(ls.routes)
         resize!(ls.routesorder, length(ls.routes) * (length(ls.routes) - 1))
 

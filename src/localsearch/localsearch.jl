@@ -82,7 +82,7 @@ function divideandswap!(ls::LocalSearch)
         (releasedate(ls.data, route[lastclientidx(route)]) == route.releasedate) && continue
 
         # skip vertices with higher release date
-        startpos = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)
+        startpos::Int = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)
 
         for pos in startpos:(lastclientidx(route) - 1)
             new_ra_end =
@@ -120,7 +120,7 @@ end
 function updateroutesdata!(ls::LocalSearch)
     endprev = 0
 
-    toremove = []
+    toremove = Int[]
     for (pos, route) in enumerate(ls.routes)
         route.pos = pos
 
@@ -228,20 +228,27 @@ function savegianttour!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
 end
 
 function printroutes(ls::LocalSearch)
+    return printroutes(ls.data, ls.routes)
+end
+
+function printroutes(data::Data, routes::Vector{Route})
+    sort!(routes; by = r -> r.pos)
+
     println("    RD  |  DURAT |  START |   END  |  ROUTE")
 
-    for route in ls.routes
+    for route in routes
         @printf "  %4d  |  %4d  |  %4d  |  %4d  |  " route.releasedate route.duration route.starttime route.endtime
         # print clients
         print("[ 0]")
         for c in 2:lastindex(route.clients)
-            time = arctime(ls.data, route[c - 1], route[c])
+            time = arctime(data, route[c - 1], route[c])
             @printf " -(%2d)-> [%2d]" time route[c].id
         end
 
         print("  Clearances: ")
-        for r in (route.pos + 1):lastindex(ls.routes)
-            @printf "(%d)[%d]  " r route.clearance[r]
+        for r2 in routes
+            (route.pos >= r2.pos) && continue
+            @printf "(%d)[%d]  " r2.pos route.clearance[r2.pos]
         end
         println()
     end
