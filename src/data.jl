@@ -124,11 +124,11 @@ function read_coords(file::IO)
     readuntil(file, "</VERTICES>")
     readline(file)
 
-    X, Y, releasedates = Int[], Int[], Int[]
+    X, Y, releasedates = Float64[], Float64[], Int[]
     for _ in 1:V
         values = split(readline(file))
-        push!(X, parse(Int, values[1]))
-        push!(Y, parse(Int, values[2]))
+        push!(X, parse(Float64, values[1]))
+        push!(Y, parse(Float64, values[2]))
         push!(releasedates, parse(Int, values[7]))
     end
 
