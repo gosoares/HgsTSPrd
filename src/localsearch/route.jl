@@ -45,13 +45,15 @@ end
 function Route(V::Int)
     clients = Vertex[]
     sizehint!(clients, V)
-    return Route(-1, clients, 0, Vertex(1), Vertex(1), 0, 0, 0, 0, 0, 0, 0, Vector{Int}(undef, V))
+    return Route(-1, clients, Vertex(1), Vertex(1), 0, 0, 0, 0, 0, 0, 0, Vector{Int}(undef, V))
 end
 
 nclients(r::Route) = length(r.clients) - 2
 
 @inline lastclientidx(r::Route) = lastindex(r.clients) - 1
-@inline clientsrange(r::Route) = 2:lastclientidx(r)
+@inline clientsrange(r::Route) = 2:(lastindex(r.clients) - 1)
+@inline lastblockidx(r::Route, bsize::Int) = lastindex(r.clients) - bsize
+@inline blocksrange(r::Route, bsize::Int) = 2:(lastindex(r.clients) - bsize)
 
 @inline Base.getindex(r::Route, idx::Integer) = r.clients[idx]
 @inline Base.setindex!(r::Route, v::Vertex, idx::Integer) = (r.clients[idx] = v)

@@ -20,8 +20,8 @@ function main(args::Vector{String})
     ga = GeneticAlgorithm(data)
     run!(ga)
 
-    exectime = (time_ns() - starttime) / 1000000
-    bestsoltime = (ga.population.searchprogress[end][1] - starttime) / 1000000
+    exectime = floor(Int, (time_ns() - starttime) / 1000000)
+    bestsoltime = floor(Int, (ga.population.searchprogress[end][1] - starttime) / 1000000)
     println()
     println("Execution Time : $exectime ms")
     println("Solution Time  : $bestsoltime ms")

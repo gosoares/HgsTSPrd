@@ -1,7 +1,3 @@
-using Printf
-
-const N_INTRA = 2 # number of implemented intra searchs
-
 mutable struct LocalSearch{V}
     data::Data{V}
     split::Split{V}

@@ -1,3 +1,6 @@
+
+const N_INTRA = 3 # number of implemented intra searchs
+
 function intrasearch!(ls::LocalSearch{V}) where {V}
     shuffle!(ls.data.rng, ls.intramovesorder)
     improvedAny = false
@@ -8,10 +11,12 @@ function intrasearch!(ls::LocalSearch{V}) where {V}
         while whichmove <= N_INTRA
             move = ls.intramovesorder[whichmove]
 
-            if move == 1
-                improved = intrarelocation!(ls.data, route, 1)
+            improved = if move == 1
+                intrarelocation!(ls.data, route, 1)
             elseif move == 2
-                improved = intraswap!(ls.data, route, 1, 1)
+                intraswap!(ls.data, route, 1, 1)
+            elseif move == 3
+                intratwoopt!(ls.data, route)
             else
                 error("unknown move")
             end
@@ -34,12 +39,12 @@ function intrarelocation!(data::Data, route::Route, bsize::Int)
     bestblockpos = -1
     bestinspos = -1
 
-    for c in 2:(lastindex(route.clients) - bsize)
+    for c in blocksrange(route, bsize)
         preimprovement =
             arctime(data, route[c - 1], route[c]) + arctime(data, route[c + bsize - 1], route[c + bsize]) -
             arctime(data, route[c - 1], route[c + bsize])
 
-        for pos in chain(1:(c - 2), (c + bsize):(lastindex(route.clients) - bsize))
+        for pos in chain(1:(c - 2), (c + bsize):lastblockidx(route, bsize))
             improvement =
                 preimprovement + arctime(data, route[pos], route[pos + 1]) - arctime(data, route[pos], route[c]) -
                 arctime(data, route[c + bsize - 1], route[pos + 1])
@@ -83,10 +88,10 @@ function onewayintraswap(data::Data, route::Route, b1size::Int, b2size::Int)
     bestpos1 = -1
     bestpos2 = -1
 
-    for c1 in 2:(lastindex(route.clients) - b1size)
+    for c1 in blocksrange(route, b1size)
         preimprov = arctime(data, route[c1 - 1], route[c1]) + arctime(data, route[c1 + b1size - 1], route[c1 + b1size])
 
-        for c2 in (c1 + 1):(lastindex(route.clients) - b2size)
+        for c2 in (c1 + 1):lastblockidx(route, b2size)
             improv =
                 preimprov + arctime(data, route[c2 + b2size - 1], route[c2 + b2size]) -
                 arctime(data, route[c1 - 1], route[c2]) - arctime(data, route[c1 + b1size - 1], route[c2 + b2size])
@@ -107,4 +112,33 @@ function onewayintraswap(data::Data, route::Route, b1size::Int, b2size::Int)
     end
 
     return bestimprovement, bestpos1, bestpos2
+end
+
+function intratwoopt!(data::Data, route::Route)
+    bestimprovement = 0
+    bestpos1 = -1
+    bestpos2 = -1
+
+    for c1 in clientsrange(route)
+        preimprov = arctime(data, route[c1 - 1], route[c1]) + arctime(data, route[c1], route[c1 + 1])
+
+        for c2 in (c1 + 1):lastclientidx(route)
+            preimprov = preimprov + arctime(data, route[c2], route[c2 + 1]) - arctime(data, route[c2], route[c2 - 1])
+
+            improv = preimprov - arctime(data, route[c1 - 1], route[c2]) - arctime(data, route[c1], route[c2 + 1])
+
+            if improv > bestimprovement
+                bestimprovement = improv
+                bestpos1 = c1
+                bestpos2 = c2
+            end
+        end
+    end
+
+    if bestimprovement > 0
+        reverse!(route.clients, bestpos1, bestpos2)
+        return true
+    end
+
+    return false
 end
