@@ -38,8 +38,7 @@ function educate!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
                 improved = false
                 # improved = intersearch!(ls)
             elseif movetype == 2
-                improved = false
-                # improved = depotsearch!(ls)
+                improved = divideandswap!(ls)
             end
 
             movetype = (movetype + 1) % 3
@@ -64,6 +63,38 @@ function splitsearch(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     split!(ls.split, indiv)
     loadindividual!(ls, indiv)
     return indiv.eval < prevtime
+end
+
+function divideandswap!(ls::LocalSearch)
+    for r in 2:lastindex(ls.routes)
+        route = ls.routes[r]
+
+        (ls.routes[r - 1].endtime >= route.releasedate) && continue
+        (releasedate(ls.data, route[lastclientidx(route)]) == route.releasedate) && continue
+
+        # skip vertices with higher release date
+        startpos = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)
+
+        for pos in startpos:(lastclientidx(route) - 1)
+            new_ra_end =
+                max(route.endprevious, route[pos].successors_rd) + # start time
+                arctime(ls.data, 1, route[pos + 1]) +
+                route[pos + 1].durationafter # duration
+            new_rb_end =
+                max(new_ra_end, route[pos + 1].predecessors_rd) + # start time
+                route[pos].durationbefore +
+                arctime(ls.data, route[pos], 1) # duration
+
+            if new_rb_end < route.endtime
+                newroute = addroute!(ls, route.pos + 1)
+                splice!(newroute.clients, 2:1, view(route.clients, 2:pos))
+                deleteat!(route.clients, 2:pos)
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 function addroute!(ls::LocalSearch, pos::Integer = lastindex(ls.routes) + 1)

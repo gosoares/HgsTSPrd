@@ -11,6 +11,8 @@ Vertex(id::Int) = Vertex(id, 0, 0, 0, 0)
 
 @inline releasedate(data::Data, v::Vertex) = releasedate(data, v.id)
 @inline arctime(data::Data, v1::Vertex, v2::Vertex) = arctime(data, v1.id, v2.id)
+@inline arctime(data::Data, v1::Integer, v2::Vertex) = arctime(data, v1, v2.id)
+@inline arctime(data::Data, v1::Vertex, v2::Integer) = arctime(data, v1.id, v2)
 
 @inline Base.getindex(vec::Vector{Int}, v::Vertex) = vec[v.id]
 @inline Base.setindex!(vec::Vector{Int}, value::Int, index::Vertex) = (vec[index.id] = value)
