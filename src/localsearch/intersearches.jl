@@ -1,7 +1,8 @@
-const N_INTER = 5
+const N_INTER = 3
 
 function intersearch!(ls::LocalSearch)
     (length(ls.routes) == 1) && (return false)
+    updateroutesdata!(ls)
 
     shuffle!(ls.data.rng, ls.intermovesorder)
     improvedany = false
@@ -12,28 +13,30 @@ function intersearch!(ls::LocalSearch)
         move = ls.intermovesorder[whichmove]
         improved = false
 
-        updateroutesorder!(ls)
-        for routespair in ls.routesorder
-            route1 = ls.routes[routespair[1]]
-            route2 = ls.routes[routespair[2]]
+        if move == 3 # divideandswap
+            updateroutesdata!(ls) # todo remove
+            improved = divideandswap!(ls)
+        else
+            updateroutesorder!(ls)
+            for routespair in ls.routesorder
+                route1 = ls.routes[routespair[1]]
+                route2 = ls.routes[routespair[2]]
 
-            if move == 1
-                improved = interrelocation!(ls.data, route1, route2, 1)
-            elseif move == 2
-                improved = interrelocation!(ls.data, route1, route2, 2)
-            elseif move == 3
-                (route1.pos > route2.pos) && continue
-                improved = interswap!(ls.data, route1, route2, 1, 1)
-            elseif move == 4
-                improved = interswap!(ls.data, route1, route2, 1, 2)
-            elseif move == 5
-                improved = intertwoopt!(ls.data, route1, route2)
-            else
-                error("unknown move")
-            end
+                if move == 1 # relocation 1
+                    improved = interrelocation!(ls.data, route1, route2, 1)
+                elseif move == 2 # swap 1 1
+                    improved = (route1.pos > route2.pos) ? false : interswap!(ls.data, route1, route2, 1, 1)
+                elseif move == 4  # 2opt
+                    improved = intertwoopt!(ls.data, route1, route2)
+                elseif move == 5 # relocation 2
+                    improved = interrelocation!(ls.data, route1, route2, 2)
+                elseif move == 6 # swap 1 2
+                    improved = interswap!(ls.data, route1, route2, 1, 2)
+                else
+                    error("unknown move")
+                end
 
-            if improved
-                break
+                improved && break
             end
         end
 
@@ -48,6 +51,38 @@ function intersearch!(ls::LocalSearch)
     end
 
     return improvedany
+end
+
+function divideandswap!(ls::LocalSearch)
+    for r in 2:lastindex(ls.routes)
+        route = ls.routes[r]
+
+        (ls.routes[r - 1].endtime >= route.releasedate) && continue
+        (releasedate(ls.data, route[lastclientidx(route)]) == route.releasedate) && continue
+
+        # skip vertices with higher release date
+        startpos = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)
+
+        for pos in startpos:(lastclientidx(route) - 1)
+            new_ra_end =
+                max(route.endprevious, route[pos].successors_rd) + # start time
+                arctime(ls.data, 1, route[pos + 1]) +
+                route[pos + 1].durationafter # duration
+            new_rb_end =
+                max(new_ra_end, route[pos + 1].predecessors_rd) + # start time
+                route[pos].durationbefore +
+                arctime(ls.data, route[pos], 1) # duration
+
+            if new_rb_end < route.endtime
+                newroute = addroute!(ls, route.pos + 1)
+                splice!(newroute.clients, 2:1, view(route.clients, 2:pos))
+                deleteat!(route.clients, 2:pos)
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 function interrelocation!(data::Data, route1::Route, route2::Route, bsize::Int)

@@ -35,31 +35,18 @@ end
 function educate!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     loadindividual!(ls, indiv)
 
-    improved = true
-    movetype = 0  # 0: intra, 1: inter, 2: depot
-    notimproved = 0
+    splitimproved = true
+    movetype = 0  # 0: intra, 1: inter
 
-    while improved
-        while notimproved < 2
-            if movetype == 0
-                improved = intrasearch!(ls)
-            elseif movetype == 1
-                improved = intersearch!(ls)
-            elseif movetype == 2
-                improved = divideandswap!(ls)
-            end
-
-            updateroutesdata!(ls)
-            movetype = (movetype + 1) % 3
-            if improved
-                updateroutesdata!(ls)
-                notimproved = 0
-            else
-                notimproved += 1
-            end
+    while splitimproved
+        improved = true
+        while improved
+            improved = (which == 0) ? intrasearch!(ls) : intersearch!(ls)
+            movetype = 1 - movetype
         end
 
-        improved = splitsearch(ls, indiv)
+        updateroutesdata!(ls)
+        splitimproved = splitsearch(ls, indiv)
     end
 
     saveindividual!(ls, indiv)
@@ -72,38 +59,6 @@ function splitsearch(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     split!(ls.split, indiv)
     loadindividual!(ls, indiv)
     return indiv.eval < prevtime
-end
-
-function divideandswap!(ls::LocalSearch)
-    for r in 2:lastindex(ls.routes)
-        route = ls.routes[r]
-
-        (ls.routes[r - 1].endtime >= route.releasedate) && continue
-        (releasedate(ls.data, route[lastclientidx(route)]) == route.releasedate) && continue
-
-        # skip vertices with higher release date
-        startpos::Int = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)
-
-        for pos in startpos:(lastclientidx(route) - 1)
-            new_ra_end =
-                max(route.endprevious, route[pos].successors_rd) + # start time
-                arctime(ls.data, 1, route[pos + 1]) +
-                route[pos + 1].durationafter # duration
-            new_rb_end =
-                max(new_ra_end, route[pos + 1].predecessors_rd) + # start time
-                route[pos].durationbefore +
-                arctime(ls.data, route[pos], 1) # duration
-
-            if new_rb_end < route.endtime
-                newroute = addroute!(ls, route.pos + 1)
-                splice!(newroute.clients, 2:1, view(route.clients, 2:pos))
-                deleteat!(route.clients, 2:pos)
-                return true
-            end
-        end
-    end
-
-    return false
 end
 
 function addroute!(ls::LocalSearch, pos::Integer = lastindex(ls.routes) + 1)

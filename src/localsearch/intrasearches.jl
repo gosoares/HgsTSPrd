@@ -1,4 +1,4 @@
-const N_INTRA = 3 # number of implemented intra searchs
+const N_INTRA = 6 # number of implemented intra searchs
 
 function intrasearch!(ls::LocalSearch{V}) where {V}
     shuffle!(ls.data.rng, ls.intramovesorder)
@@ -7,15 +7,22 @@ function intrasearch!(ls::LocalSearch{V}) where {V}
 
     for route in ls.routes
         whichmove = 1
+
         while whichmove <= N_INTRA
             move = ls.intramovesorder[whichmove]
 
-            improved = if move == 1
+            improved = if move == 1 # relocation 1
                 intrarelocation!(ls.data, route, 1)
-            elseif move == 2
+            elseif move == 2 # swap 1 1
                 intraswap!(ls.data, route, 1, 1)
-            elseif move == 3
+            elseif move == 3 # 2opt
                 intratwoopt!(ls.data, route)
+            elseif move == 4 # relocation 2
+                intrarelocation!(ls.data, route, 2)
+            elseif move == 5 # swap 1 2
+                intraswap!(ls.data, route, 1, 2)
+            elseif move == 6 # swap 2 2
+                intraswap!(ls.data, route, 2, 2)
             else
                 error("unknown move")
             end
