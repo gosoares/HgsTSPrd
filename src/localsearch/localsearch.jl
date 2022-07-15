@@ -9,9 +9,15 @@ mutable struct LocalSearch{V}
     emptyroutes::Vector{Route}
 
     intramovesorder::Vector{Int}
+    intermovesorder::Vector{Int}
+    routesorder::Vector{Tuple{Int,Int}}
+    nb_routesorder::Int
 end
 
 function LocalSearch(data::Data{V}, split::Split{V}) where {V}
+    routesorder = Tuple{Int,Int}[]
+    sizehint!(routesorder, V * V)
+
     return LocalSearch{V}(
         data,
         split,
@@ -20,6 +26,9 @@ function LocalSearch(data::Data{V}, split::Split{V}) where {V}
         Route[],
         Route[],
         [i for i in 1:N_INTRA],
+        [i for i in 1:N_INTER],
+        routesorder,
+        0,
     )
 end
 
@@ -35,12 +44,12 @@ function educate!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
             if movetype == 0
                 improved = intrasearch!(ls)
             elseif movetype == 1
-                improved = false
-                # improved = intersearch!(ls)
+                improved = intersearch!(ls)
             elseif movetype == 2
                 improved = divideandswap!(ls)
             end
 
+            updateroutesdata!(ls)
             movetype = (movetype + 1) % 3
             if improved
                 updateroutesdata!(ls)
@@ -145,7 +154,7 @@ function updateroutesdata!(ls::LocalSearch)
 
     # calculate the clearance between all pair of routes
     for r in 1:(lastindex(ls.routes) - 1)
-        ls.routes[r].clearance[r + 1] = -INF
+        ls.routes[r].clearance[r] = -INF
         ls.routes[r].clearance[r + 1] = ls.routes[r + 1].releasedate - ls.routes[r].endtime
     end
     ls.routes[end].clearance[lastindex(ls.routes)] = -INF

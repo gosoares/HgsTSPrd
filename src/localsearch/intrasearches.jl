@@ -1,9 +1,8 @@
-
 const N_INTRA = 3 # number of implemented intra searchs
 
 function intrasearch!(ls::LocalSearch{V}) where {V}
     shuffle!(ls.data.rng, ls.intramovesorder)
-    improvedAny = false
+    improvedany = false
     improved = false
 
     for route in ls.routes
@@ -24,14 +23,14 @@ function intrasearch!(ls::LocalSearch{V}) where {V}
             if improved
                 shuffle!(ls.data.rng, ls.intramovesorder)
                 whichmove = 1
-                improvedAny = true
+                improvedany = true
             else
                 whichmove += 1
             end
         end
     end
 
-    return improvedAny
+    return improvedany
 end
 
 function intrarelocation!(data::Data, route::Route, bsize::Int)
@@ -44,7 +43,7 @@ function intrarelocation!(data::Data, route::Route, bsize::Int)
             arctime(data, route[c - 1], route[c]) + arctime(data, route[c + bsize - 1], route[c + bsize]) -
             arctime(data, route[c - 1], route[c + bsize])
 
-        for pos in chain(1:(c - 2), (c + bsize):lastblockidx(route, bsize))
+        for pos in Iterators.flatten((1:(c - 2), (c + bsize):lastblockidx(route, bsize)))
             improvement =
                 preimprovement + arctime(data, route[pos], route[pos + 1]) - arctime(data, route[pos], route[c]) -
                 arctime(data, route[c + bsize - 1], route[pos + 1])

@@ -1,6 +1,6 @@
 module HgsTSPrd
 
-using IterTools, Printf, Random
+using Printf, Random
 
 include("data.jl")
 include("individual.jl")
@@ -10,6 +10,7 @@ include("localsearch/vertex.jl")
 include("localsearch/route.jl")
 include("localsearch/localsearch.jl")
 include("localsearch/intrasearches.jl")
+include("localsearch/intersearches.jl")
 include("genetic.jl")
 
 function main(args::Vector{String})
