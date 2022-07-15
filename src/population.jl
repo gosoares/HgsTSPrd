@@ -2,14 +2,14 @@ mutable struct Population{V}
     data::Data{V}
     split::Split{V}
 
-    individuals::Vector{Individual}
-    bestsolution::Individual
+    individuals::Vector{Individual{V}}
+    bestsolution::Individual{V}
 
     searchprogress::Vector{Pair{Int,Int}}
 end
 
 function Population(data::Data{V}, split::Split{V}) where {V}
-    individuals = Individual[]
+    individuals = Individual{V}[]
     sizehint!(individuals, data.params.mu + data.params.lambda + 1)
 
     return Population{V}(data, split, individuals, EmptyIndividual(data), Pair{Int,Int}[])
@@ -120,8 +120,8 @@ function updatebiasedfitness!(pop::Population)
     # since the population is sorted by the eval, the position of a
     # individual in the population is the rank of the fitness for that individual
     # now we calculate the rank of the diversity using the nCloseMean
-    rank::Vector{Tuple{Float64,Int}} = Tuple{Float64,Int}[
-        (-nclosemean(indiv, pop.data.params.nclose), rankfit) for (rankfit, indiv) in enumerate(pop.individuals)
+    rank::Vector{Pair{Float64,Int}} = Pair{Float64,Int}[
+        -nclosemean(indiv, pop.data.params.nclose) => rankfit for (rankfit, indiv) in enumerate(pop.individuals)
     ]
     sort!(rank)
 
