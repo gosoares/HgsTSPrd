@@ -41,7 +41,7 @@ function educate!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     while splitimproved
         improved = true
         while improved
-            improved = (which == 0) ? intrasearch!(ls) : intersearch!(ls)
+            improved = (movetype == 0) ? intrasearch!(ls) : intersearch!(ls)
             movetype = 1 - movetype
         end
 

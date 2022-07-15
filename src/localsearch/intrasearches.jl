@@ -78,6 +78,7 @@ function intraswap!(data::Data, route::Route, b1size::Int, b2size::Int)
         if improvement > bestimprovement
             bestimprovement = improvement
             pos1, pos2 = posa, posb
+            b1size, b2size = b2size, b1size
         end
     end
 
@@ -97,12 +98,12 @@ function onewayintraswap(data::Data, route::Route, b1size::Int, b2size::Int)
     for c1 in blocksrange(route, b1size)
         preimprov = arctime(data, route[c1 - 1], route[c1]) + arctime(data, route[c1 + b1size - 1], route[c1 + b1size])
 
-        for c2 in (c1 + 1):lastblockidx(route, b2size)
+        for c2 in (c1 + b1size):lastblockidx(route, b2size)
             improv =
                 preimprov + arctime(data, route[c2 + b2size - 1], route[c2 + b2size]) -
                 arctime(data, route[c1 - 1], route[c2]) - arctime(data, route[c1 + b1size - 1], route[c2 + b2size])
-            if c1 + 1 == c2 # adjacent blocks
-                improv = improv - arctime(data, route[c2 + b1size - 1], route[c1])
+            if c1 + b1size == c2 # adjacent blocks
+                improv = improv - arctime(data, route[c2 + b2size - 1], route[c1])
             else
                 improv =
                     improv + arctime(data, route[c2 - 1], route[c2]) -

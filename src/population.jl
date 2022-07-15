@@ -84,12 +84,12 @@ function removeworst!(pop::Population)
     worstisclone = false
     worstfit = -1.0
 
-    for (i, indiv) in enumerate(pop.individuals)
-        isclone = indiv.closest[begin][1] < 0.0001
-        if (isclone && !worstisclone) || (isclone == worstisclone && indiv.biasedfitness > worstfit)
+    for pos in eachindex(pop.individuals)
+        isclone = pop.individuals[pos].closest[begin][1] < 0.0001
+        if (isclone && !worstisclone) || (isclone == worstisclone && pop.individuals[pos].biasedfitness > worstfit)
             worstisclone = isclone
-            worstpos = i
-            worstfit = indiv.biasedfitness
+            worstpos = pos
+            worstfit = pop.individuals[pos].biasedfitness
         end
     end
 
