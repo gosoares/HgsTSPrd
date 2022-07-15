@@ -1,4 +1,4 @@
-const N_INTER = 4
+const N_INTER = 5
 
 function intersearch!(ls::LocalSearch)
     (length(ls.routes) == 1) && (return false)
@@ -26,6 +26,8 @@ function intersearch!(ls::LocalSearch)
                 improved = interswap!(ls.data, route1, route2, 1, 1)
             elseif move == 4
                 improved = interswap!(ls.data, route1, route2, 1, 2)
+            elseif move == 5
+                improved = intertwoopt!(ls.data, route1, route2)
             else
                 error("unknown move")
             end
@@ -117,6 +119,37 @@ function interswap!(data::Data, route1::Route, route2::Route, b1size::Int, b2siz
             end
         end
     end
+    return false
+end
+
+function intertwoopt!(data::Data, route1::Route, route2::Route)
+    for pos1 in 2:(lastclientidx(route1) - 1)
+        prer1duration = route1[pos1].durationbefore
+        prer2duration = route1[pos1 + 1].durationafter
+        prer1_rd = route1[pos1 + 1].predecessors_rd
+        prer2_rd = route1[pos1].successors_rd
+
+        for pos2 in 2:(lastclientidx(route2) - 1)
+            route1.newreleasedate = max(prer1_rd, route2[pos2].successors_rd)
+            route1.newduration =
+                prer1duration + route2[pos2 + 1].durationafter + arctime(data, route1[pos1], route2[pos2 + 1])
+
+            route2.newreleasedate = max(route2[pos2 + 1].predecessors_rd, prer2_rd)
+            route2.newduration =
+                prer2duration + route2[pos2].durationbefore + arctime(data, route2[pos2], route1[pos1 + 1])
+
+            if evaluateinterroutemove(route1, route2)
+                block1 = splice!(
+                    route1.clients,
+                    (pos1 + 1):(lastclientidx(route1)),
+                    view(route2.clients, (pos2 + 1):lastclientidx(route2)),
+                )
+                splice!(route2.clients, (pos2 + 1):lastclientidx(route2), block1)
+                return true
+            end
+        end
+    end
+
     return false
 end
 
