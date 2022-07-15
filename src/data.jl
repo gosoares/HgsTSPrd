@@ -25,18 +25,7 @@ const INF = typemax(Int) ÷ 2
 
 function Data(args::Vector{String})
     inputfile, outputfile, params = parseargs(args)
-
-    V, timesmatrix, releasedates = open(inputfile, "r") do file
-        first_char = peek(file, Char)
-
-        if first_char == '<'
-            return read_coords(file)
-        elseif first_char == 'N'
-            return read_distance_matrix(file)
-        else
-            throw(ArgumentError("Unknown instance file format"))
-        end
-    end
+    V, timesmatrix, releasedates = readinstancefile(inputfile)
 
     floydwarshall(timesmatrix)
 
@@ -115,6 +104,20 @@ function paramserror(detail::String = "")
     ")
     exit(1)
     return nothing
+end
+
+function readinstancefile(filepath::String)
+    return open(filepath, "r") do file
+        first_char = peek(file, Char)
+
+        if first_char == '<'
+            return read_coords(file)
+        elseif first_char == 'N'
+            return read_distance_matrix(file)
+        else
+            throw(ArgumentError("Unknown instance file format"))
+        end
+    end
 end
 
 function read_coords(file::IO)

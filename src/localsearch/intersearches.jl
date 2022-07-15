@@ -61,7 +61,7 @@ function divideandswap!(ls::LocalSearch)
         (releasedate(ls.data, route[lastclientidx(route)]) == route.releasedate) && continue
 
         # skip vertices with higher release date
-        startpos = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)
+        startpos = findfirst(v -> v.successors_rd < releasedate(ls.data, v), route.clients)::Int
 
         for pos in startpos:(lastclientidx(route) - 1)
             new_ra_end =

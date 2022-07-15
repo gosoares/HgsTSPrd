@@ -5,7 +5,7 @@ struct GeneticAlgorithm{V}
     population::Population{V}
     itni::Int
 
-    copied::BitArray # mark if each client was copied from parent1 to offspring
+    copied::BitArray{1} # mark if each client was copied from parent1 to offspring
 end
 
 function GeneticAlgorithm(data::Data{V}; itni::Integer = data.params.itni) where {V}

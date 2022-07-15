@@ -56,7 +56,34 @@ function warmup(data::Data)
     return nothing
 end
 
-export Data, GeneticAlgorithm
-export main, run!
+export main, warmup
+export Data
+export GeneticAlgorithm, run!, ordercrossover
+export Split, split!
+export Population,
+    Individual,
+    EmptyIndividual,
+    RandomIndividual,
+    initialize!,
+    addindividual!,
+    survival!,
+    removeworst!,
+    updatebiasedfitness!,
+    selectparents,
+    binarytournament,
+    diversify!
+export LocalSearch,
+    Route,
+    Vertex,
+    educate!,
+    splitsearch!,
+    addroute!,
+    updateroutesdata!,
+    loadindividual!,
+    saveindividual!,
+    savegianttour!,
+    printroutes,
+    intrasearch!,
+    intersearch!
 
 end # module
