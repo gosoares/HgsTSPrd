@@ -1,4 +1,4 @@
-const N_INTER = 2
+const N_INTER = 4
 
 function intersearch!(ls::LocalSearch)
     (length(ls.routes) == 1) && (return false)
@@ -18,9 +18,14 @@ function intersearch!(ls::LocalSearch)
             route2 = ls.routes[routespair[2]]
 
             if move == 1
-                improved = interrelocation(ls.data, route1, route2, 1)
+                improved = interrelocation!(ls.data, route1, route2, 1)
             elseif move == 2
-                improved = interrelocation(ls.data, route1, route2, 2)
+                improved = interrelocation!(ls.data, route1, route2, 2)
+            elseif move == 3
+                (route1.pos > route2.pos) && continue
+                improved = interswap!(ls.data, route1, route2, 1, 1)
+            elseif move == 4
+                improved = interswap!(ls.data, route1, route2, 1, 2)
             else
                 error("unknown move")
             end
@@ -43,7 +48,7 @@ function intersearch!(ls::LocalSearch)
     return improvedany
 end
 
-function interrelocation(data::Data, route1::Route, route2::Route, bsize::Int)
+function interrelocation!(data::Data, route1::Route, route2::Route, bsize::Int)
     for c in blocksrange(route1, bsize)
         route1.newreleasedate = max(route1[c].predecessors_rd, route1[c + bsize - 1].successors_rd)
         route1.newduration =
@@ -72,6 +77,46 @@ function interrelocation(data::Data, route1::Route, route2::Route, bsize::Int)
         end
     end
 
+    return false
+end
+
+function interswap!(data::Data, route1::Route, route2::Route, b1size::Int, b2size::Int)
+    for c1 in blocksrange(route1, b1size)
+        prer1_rd = max(route1[c1].predecessors_rd, route1[c1 + b1size - 1].successors_rd)
+        prer1_duration = route1[c1 - 1].durationbefore + route1[c1 + b1size].durationafter
+        block1duration = route1[c1].durationafter - route1[c1 + b1size - 1].durationafter
+
+        for c2 in blocksrange(route2, b2size)
+            route1.newreleasedate = max(
+                prer1_rd, releasedate(data, route2[c2]), releasedate(data, route2[c2 + b2size - 1])
+            ) # valid for b2size up to 2
+            route1.newduration =
+                prer1_duration +
+                arctime(data, route1[c1 - 1], route2[c2]) + # arc before block
+                (route2[c2].durationafter - route2[c2 + b2size - 1].durationafter) + # block duration
+                arctime(data, route2[c2 + b2size - 1], route1[c1 + b1size]) # arc after block
+
+            route2.newreleasedate = max(
+                route2[c2].predecessors_rd,
+                route2[c2 + b2size - 1].successors_rd,
+                releasedate(data, route1[c1]),
+                releasedate(data, route1[c1 + b1size - 1]),
+            ) # valid for b2size up to 2
+
+            route2.newduration =
+                route2[c2 - 1].durationbefore +
+                block1duration +
+                route2[c2 + b2size].durationafter +
+                arctime(data, route2[c2 - 1], route1[c1]) +
+                arctime(data, route1[c1 + b1size - 1], route2[c2 + b2size])
+
+            if evaluateinterroutemove(route1, route2)
+                block1 = splice!(route1.clients, c1:(c1 + b1size - 1), view(route2.clients, c2:(c2 + b2size - 1)))
+                splice!(route2.clients, c2:(c2 + b2size - 1), block1)
+                return true
+            end
+        end
+    end
     return false
 end
 
