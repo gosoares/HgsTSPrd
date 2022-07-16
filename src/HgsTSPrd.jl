@@ -33,20 +33,20 @@ function warmup(data::Data)
 end
 
 function savetofile!(data::Data, ga::GeneticAlgorithm, starttime::Integer; print::Bool = false)
-    if isempty(data.outputfile)
-        @warn "No output file informed."
-        return nothing
-    end
-
     exectime = floor(Int, (time_ns() - starttime) / 1000000)
     bestsoltime = floor(Int, (ga.population.searchprogress[end][1] - starttime) / 1000000)
 
-    mkpath(rsplit(data.outputfile, '/'; limit = 2)[1])
-    open(data.outputfile, "w") do f
-        write(f, "EXEC_TIME $exectime\n")
-        write(f, "SOL_TIME $bestsoltime\n")
-        write(f, "OBJ $(ga.population.bestsolution.eval)\n")
-        write(f, "SEED $(data.params.seed)\n")
+    if isempty(data.outputfile)
+        @warn "No output file informed."
+        return nothing
+    else
+        mkpath(rsplit(data.outputfile, '/'; limit = 2)[1])
+        open(data.outputfile, "w") do f
+            write(f, "EXEC_TIME $exectime\n")
+            write(f, "SOL_TIME $bestsoltime\n")
+            write(f, "OBJ $(ga.population.bestsolution.eval)\n")
+            write(f, "SEED $(data.params.seed)\n")
+        end
     end
 
     if print
