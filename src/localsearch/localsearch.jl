@@ -75,13 +75,17 @@ end
 function updateroutesdata!(ls::LocalSearch)
     endprev = 0
 
-    toremove = Int[]
-    for (pos, route) in enumerate(ls.routes)
+    pos = 1
+    while pos <= length(ls.routes)
+        route = ls.routes[pos]
         route.pos = pos
 
         if nclients(route) == 0 # remove empty routes
-            push!(toremove, pos)
+            push!(ls.emptyroutes, route)
+            deleteat!(ls.routes, pos)
             continue
+        else
+            pos += 1
         end
 
         for c in 2:lastindex(route.clients)
@@ -101,11 +105,6 @@ function updateroutesdata!(ls::LocalSearch)
         route.endprevious = endprev
         endprev = route.endtime
     end
-
-    for r in toremove
-        push!(ls.emptyroutes, ls.routes[r])
-    end
-    deleteat!(ls.routes, toremove)
 
     # calculate the clearance between all pair of routes
     for r in 1:(lastindex(ls.routes) - 1)

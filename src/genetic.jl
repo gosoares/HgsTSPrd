@@ -38,7 +38,7 @@ end
 
 function ordercrossover(ga::GeneticAlgorithm{V})::Individual{V} where {V}
     parent1, parent2 = selectparents(ga.population)
-    offspring = EmptyIndividual(ga.data)
+    offspring = getemptyindividual(ga.population)
     fill!(ga.copied, false)
 
     startpos = rand(ga.data.rng, 2:V)

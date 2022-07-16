@@ -8,19 +8,26 @@ mutable struct Individual{V}
 end
 
 function RandomIndividual(data::Data{V}) where {V}
-    gianttour = [i for i in 1:V]
+    gianttour = Int[i for i in 1:V]
     shuffle!(data.rng, view(gianttour, 2:V))
-
-    return Individual{V}(
-        INF, gianttour, Vector{Int}(undef, V), Vector{Int}(undef, V), Pair{Float64,Individual{V}}[], Inf
-    )
+    closest = Pair{Float64,Individual{V}}[]
+    sizehint!(closest, data.params.mu + data.params.lambda + 2)
+    return Individual{V}(INF, gianttour, Vector{Int}(undef, V), Vector{Int}(undef, V), closest, Inf)
 end
 
-function EmptyIndividual(::Data{V}) where {V}
-    return Individual{V}(
-        INF, Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V), Pair{Float64,Individual{V}}[], Inf
-    )
+function EmptyIndividual(data::Data{V}) where {V}
+    closest = Pair{Float64,Individual{V}}[]
+    sizehint!(closest, data.params.mu + data.params.lambda + 2)
+    return Individual{V}(INF, Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V), closest, Inf)
 end
+
+mutable struct NCloseMean # just a auxiliar struct to calculate the dc rank of the individuals
+    rankfit::Int
+    nclosemean::Float64
+end
+
+# order by increasing nclosemean
+Base.isless(a::NCloseMean, b::NCloseMean) = a.nclosemean > b.nclosemean
 
 """
     insertclosest!(indiv1, indiv2)

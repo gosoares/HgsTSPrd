@@ -6,13 +6,26 @@ mutable struct Population{V}
     bestsolution::Individual{V}
 
     searchprogress::Vector{Pair{Int,Int}}
+
+    nclosemeans::Vector{NCloseMean}
+
+    # individuals objects that are not in the population anymore and can be reused
+    emptyindividuals::Vector{Individual{V}}
 end
 
 function Population(data::Data{V}, split::Split{V}) where {V}
     individuals = Individual{V}[]
-    sizehint!(individuals, data.params.mu + data.params.lambda + 1)
+    nclosemeans = NCloseMean[NCloseMean(0, 0) for _ in 1:(data.params.mu + data.params.lambda + 2)]
+    sizehint!(individuals, data.params.mu + data.params.lambda + 2)
+    return Population{V}(data, split, individuals, EmptyIndividual(data), Pair{Int,Int}[], nclosemeans, Individual{V}[])
+end
 
-    return Population{V}(data, split, individuals, EmptyIndividual(data), Pair{Int,Int}[])
+function getemptyindividual(pop::Population{V}) where {V}
+    if isempty(pop.emptyindividuals)
+        return EmptyIndividual(pop.data)
+    else
+        return pop!(pop.emptyindividuals)
+    end
 end
 
 """
@@ -94,6 +107,7 @@ function removeworst!(pop::Population)
     end
 
     worstindiv = popat!(pop.individuals, worstpos)
+    push!(pop.emptyindividuals, worstindiv)
 
     for indiv in pop.individuals
         removefromclosest!(indiv, worstindiv)
@@ -120,13 +134,15 @@ function updatebiasedfitness!(pop::Population)
     # since the population is sorted by the eval, the position of a
     # individual in the population is the rank of the fitness for that individual
     # now we calculate the rank of the diversity using the nCloseMean
-    rank::Vector{Pair{Float64,Int}} = Pair{Float64,Int}[
-        -nclosemean(indiv, pop.data.params.nclose) => rankfit for (rankfit, indiv) in enumerate(pop.individuals)
-    ]
-    sort!(rank)
+    for (rankfit, indiv) in enumerate(pop.individuals)
+        nc = pop.nclosemeans[rankfit]
+        nc.rankfit = rankfit
+        nc.nclosemean = nclosemean(indiv, pop.data.params.nclose)
+    end
+    sort!(view(pop.nclosemeans, 1:lastindex(pop.individuals)))
 
-    for rankdc in eachindex(rank)
-        rankfit = rank[rankdc][2]
+    for rankdc in 1:length(pop.individuals)
+        rankfit = pop.nclosemeans[rankdc].rankfit
         pop.individuals[rankfit].biasedfitness =
             rankfit + (1.0 - pop.data.params.nbelite / length(pop.individuals)) * rankdc
     end
