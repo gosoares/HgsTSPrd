@@ -1,4 +1,4 @@
-using HgsTSPrd
+using HgsTSPrd, Printf
 
 function tsprd_execute(outputfolder::String)
     mkpath(outputfolder)
@@ -6,20 +6,33 @@ function tsprd_execute(outputfolder::String)
 
     instanceids = getinstancesids()
 
-    Threads.@threads for instanceid in instanceids
-        println("instance: $(instanceid.name) exec: $(instanceid.execid)")
-        sleep(rand(1:6))
-    end
+    println(" Executed  |   Time   | Last Instance")
+    currentelement = 0
+    startime = time_ns()
+    ninstances = length(instanceids)
 
-    # @sync for instanceid in instanceids
-    #     Threads.@spawn begin
-    #         println("instance: $(instanceid.name) exec: $(instanceid.execid)")
-    #         sleep(rand(1:6))
-    #     end
-    # end
+    Threads.@threads for instanceid in instanceids
+        runinstance(instanceid, outputfolder)
+
+        instancename = "$(instanceid.instanceset)/$(instanceid.name)_$(instanceid.beta) $(instanceid.execid)"
+        currenttime = (time_ns() - startime) / 1000000000
+        currentelement += 1
+
+        @printf(
+            "\r %4d/%4d | %02d:%02d:%02d | %s                  ",
+            currentelement,
+            ninstances,
+            (currenttime ÷ 3600),
+            (currenttime ÷ 60 % 60),
+            (currenttime % 60),
+            instancename
+        )
+    end
 
     return nothing
 end
+
+const TIME_LIMIT = floor(Int, 10 * 60 * (1976.0 / 1201.0))
 
 struct InstanceID
     instanceset::String
@@ -32,6 +45,23 @@ struct InstanceID
         N = parse(Int, match(r"\d+", name).match)
         return new(iset, name, N, beta, execid)
     end
+end
+
+function runinstance(instanceid::InstanceID, outputfolder::String)
+    instance_str = "$(instanceid.instanceset)/$(instanceid.name)_$(instanceid.beta)"
+    inputfile = "../instances/$instance_str.dat"
+    outputfile = joinpath(outputfolder, "$(instance_str)_$(instanceid.execid).txt")
+    isfile(outputfile) && return nothing
+
+    data = Data(String[inputfile, "-o", outputfile, "-t", string(TIME_LIMIT)])
+    warmup(data)
+
+    starttime = time_ns()
+    ga = GeneticAlgorithm(data)
+    run!(ga)
+
+    savetofile!(data, ga, starttime; print = false)
+    return nothing
 end
 
 function getinstancesids()
@@ -52,13 +82,13 @@ function getinstancesids()
     ]
 end
 
-# if length(ARGS) != 1
-#     @warn("Inform the output folder")
-#     exit(1)
-# elseif !isdirpath("$(ARGS[1])/")
-#     @warn("\"$(ARGS[1])\" is not a valid folder.")
-#     exit(1)
-# end
-# tsprd_execute(ARGS[1])
+if length(ARGS) != 1
+    @warn("Inform the output folder")
+    exit(1)
+elseif !isdirpath("$(ARGS[1])/")
+    @warn("\"$(ARGS[1])\" is not a valid folder.")
+    exit(1)
+end
+tsprd_execute(ARGS[1])
 
-HgsTSPrd.main(ARGS)
+# HgsTSPrd.main(ARGS)

@@ -52,7 +52,7 @@ function savetofile!(data::Data, ga::GeneticAlgorithm, starttime::Integer; print
     end
 end
 
-export main, warmup
+export main, warmup, savetofile!
 export Data
 export GeneticAlgorithm, run!, ordercrossover
 export Split, split!
