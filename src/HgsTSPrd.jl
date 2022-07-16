@@ -16,36 +16,12 @@ include("genetic.jl")
 function main(args::Vector{String})
     data = Data(args)
     warmup(data)
-    starttime = time_ns()
 
+    starttime = time_ns()
     ga = GeneticAlgorithm(data)
     run!(ga)
 
-    exectime = floor(Int, (time_ns() - starttime) / 1000000)
-    bestsoltime = floor(Int, (ga.population.searchprogress[end][1] - starttime) / 1000000)
-    println()
-    println("Execution Time : $exectime ms")
-    println("Solution Time  : $bestsoltime ms")
-    println("Obj            : $(ga.population.bestsolution.eval)")
-    println("Seed           : $(data.params.seed)")
-
-    # println()
-    # individual = RandomIndividual(data)
-    # split = Split(data)
-    # split!(split, individual)
-
-    # @show individual.gianttour
-    # @show individual.successors
-    # @show individual.predecessors
-
-    # ls = LocalSearch(data, split)
-    # loadindividual!(ls, individual)
-    # saveindividual!(ls, individual)
-    # println()
-
-    # @show individual.gianttour
-    # @show individual.successors
-    # @show individual.predecessors
+    savetofile!(data, ga, starttime; print = false)
 
     return nothing
 end
@@ -54,6 +30,26 @@ function warmup(data::Data)
     ga = GeneticAlgorithm(data; itni = data.params.itni ÷ 10)
     run!(ga)
     return nothing
+end
+
+function savetofile!(data::Data, ga::GeneticAlgorithm, starttime::Integer; print::Bool = false)
+    exectime = floor(Int, (time_ns() - starttime) / 1000000)
+    bestsoltime = floor(Int, (ga.population.searchprogress[end][1] - starttime) / 1000000)
+
+    mkpath(rsplit(data.outputfile, '/'; limit = 2)[1])
+    open(data.outputfile, "w") do f
+        write(f, "EXEC_TIME $exectime\n")
+        write(f, "SOL_TIME $bestsoltime\n")
+        write(f, "OBJ $(ga.population.bestsolution.eval)\n")
+        write(f, "SEED $(data.params.seed)\n")
+    end
+
+    if print
+        println("Execution Time : $exectime ms")
+        println("Solution Time  : $bestsoltime ms")
+        println("Obj            : $(ga.population.bestsolution.eval)")
+        println("Seed           : $(data.params.seed)")
+    end
 end
 
 export main, warmup

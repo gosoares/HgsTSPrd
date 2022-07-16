@@ -61,7 +61,7 @@ function parseargs(args::Vector{String})
                 timelimit = parse(Int, args[i + 1])
             elseif args[i] == "-s"
                 seed = parse(Int, args[i + 1])
-            elseif args[i] == "-t"
+            elseif args[i] == "-o"
                 outputfile = args[i + 1]
             elseif args[i] == "--mu"
                 mu = parse(Int, args[i + 1])
