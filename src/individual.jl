@@ -1,24 +1,22 @@
+mutable struct IndivDist{Tindiv}
+    indiv::Tindiv
+    dist::Float64
+end
+
 mutable struct Individual{V}
     eval::Int # completion time of last route
     gianttour::Vector{Int} # element at position 1 is a sentinel
     successors::Vector{Int}
     predecessors::Vector{Int}
-    closest::Vector{Pair{Float64,Individual{V}}}
+    closest::Vector{IndivDist{Individual{V}}}
+    nclosest::Int # number of actual items in `closest`
     biasedfitness::Float64
 end
 
-function RandomIndividual(data::Data{V}) where {V}
-    gianttour = Int[i for i in 1:V]
-    shuffle!(data.rng, view(gianttour, 2:V))
-    closest = Pair{Float64,Individual{V}}[]
-    sizehint!(closest, data.params.mu + data.params.lambda + 2)
-    return Individual{V}(INF, gianttour, Vector{Int}(undef, V), Vector{Int}(undef, V), closest, Inf)
-end
-
-function EmptyIndividual(data::Data{V}) where {V}
-    closest = Pair{Float64,Individual{V}}[]
-    sizehint!(closest, data.params.mu + data.params.lambda + 2)
-    return Individual{V}(INF, Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V), closest, Inf)
+function Individual(::Data{V}) where {V}
+    return Individual{V}(
+        INF, Int[i for i in 1:V], Vector{Int}(undef, V), Vector{Int}(undef, V), IndivDist{Individual{V}}[], 0, Inf
+    )
 end
 
 mutable struct NCloseMean # just a auxiliar struct to calculate the dc rank of the individuals
@@ -47,15 +45,25 @@ end
 Insert the individual `cl` into the closest list of `indiv` with a distance of `dist`.
 """
 function insertclosest!(indiv::Individual{V}, cl::Individual{V}, dist::Float64) where {V}
-    el = dist => cl
-    pos::Int = searchsortedlast(indiv.closest, el; by = e -> e[1])
-    insert!(indiv.closest, pos + 1, el)
+    pos = indiv.nclosest + 1
+    while pos > 1 && dist < indiv.closest[pos - 1].dist
+        indiv.closest[pos].indiv = indiv.closest[pos - 1].indiv
+        indiv.closest[pos].dist = indiv.closest[pos - 1].dist
+        pos -= 1
+    end
+    indiv.closest[pos].indiv = cl
+    indiv.closest[pos].dist = dist
+    indiv.nclosest += 1
     return nothing
 end
 
 function removefromclosest!(indiv::Individual{V}, cl::Individual{V}) where {V}
-    pos::Int = findfirst(e -> e[2] == cl, indiv.closest)
-    popat!(indiv.closest, pos)
+    pos::Int = findfirst(e -> e.indiv == cl, indiv.closest)
+    for p in pos:(indiv.nclosest)
+        indiv.closest[p].indiv = indiv.closest[p + 1].indiv
+        indiv.closest[p].dist = indiv.closest[p + 1].dist
+    end
+    indiv.nclosest -= 1
     return nothing
 end
 
@@ -65,7 +73,7 @@ end
 Calculate the average distance of the `nclose` closest individuals to `indiv`.
 """
 function nclosemean(indiv::Individual{V}, nclose::Int)::Float64 where {V}
-    return sum(indiv.closest[i][1] for i in 1:nclose) / nclose
+    return sum(indiv.closest[i].dist for i in 1:nclose) / nclose
 end
 
 """

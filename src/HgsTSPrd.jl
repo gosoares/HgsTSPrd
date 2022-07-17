@@ -38,7 +38,6 @@ function savetofile!(data::Data, ga::GeneticAlgorithm, starttime::Integer; print
 
     if isempty(data.outputfile)
         @warn "No output file informed."
-        return nothing
     else
         mkpath(rsplit(data.outputfile, '/'; limit = 2)[1])
         open(data.outputfile, "w") do f
@@ -63,8 +62,6 @@ export GeneticAlgorithm, run!, ordercrossover
 export Split, split!
 export Population,
     Individual,
-    EmptyIndividual,
-    RandomIndividual,
     initialize!,
     addindividual!,
     survival!,

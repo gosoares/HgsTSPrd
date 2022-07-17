@@ -17,15 +17,19 @@ function Population(data::Data{V}, split::Split{V}) where {V}
     individuals = Individual{V}[]
     nclosemeans = NCloseMean[NCloseMean(0, 0) for _ in 1:(data.params.mu + data.params.lambda + 2)]
     sizehint!(individuals, data.params.mu + data.params.lambda + 2)
-    return Population{V}(data, split, individuals, EmptyIndividual(data), Pair{Int,Int}[], nclosemeans, Individual{V}[])
+
+    emptyindividuals = Individual{V}[Individual(data) for _ in 1:(data.params.mu + data.params.lambda + 2)]
+    for indiv in emptyindividuals
+        indiv.closest = IndivDist{Individual{V}}[IndivDist{Individual{V}}(ind, 0) for ind in emptyindividuals]
+    end
+
+    return Population{V}(data, split, individuals, Individual(data), Pair{Int,Int}[], nclosemeans, emptyindividuals)
 end
 
 function getemptyindividual(pop::Population{V}) where {V}
-    if isempty(pop.emptyindividuals)
-        return EmptyIndividual(pop.data)
-    else
-        return pop!(pop.emptyindividuals)
-    end
+    indiv = pop!(pop.emptyindividuals)
+    indiv.nclosest = 0
+    return indiv
 end
 
 """
@@ -33,9 +37,10 @@ end
 
 Initialize the population with `2*mu` random individuals.
 """
-function initialize!(pop::Population)
+function initialize!(pop::Population{V}) where {V}
     for _ in 1:(2 * pop.data.params.mu)
-        indiv = RandomIndividual(pop.data)
+        indiv = getemptyindividual(pop)
+        shuffle!(pop.data.rng, view(indiv.gianttour, 2:V))
         split!(pop.split, indiv)
         addindividual!(pop, indiv)
     end
@@ -98,7 +103,7 @@ function removeworst!(pop::Population)
     worstfit = -1.0
 
     for pos in eachindex(pop.individuals)
-        isclone = pop.individuals[pos].closest[begin][1] < 0.0001
+        isclone = pop.individuals[pos].closest[begin].dist < 0.0001
         if (isclone && !worstisclone) || (isclone == worstisclone && pop.individuals[pos].biasedfitness > worstfit)
             worstisclone = isclone
             worstpos = pos
@@ -176,5 +181,6 @@ Remove all but the best `mu/3` individuals from the population and generate
 """
 function diversify!(pop::Population)
     survival!(pop, pop.data.params.mu ÷ 3)
-    return initialize!(pop)
+    initialize!(pop)
+    return nothing
 end
