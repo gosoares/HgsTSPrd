@@ -17,11 +17,17 @@ struct Data{V} # V: how many vertices
     outputfile::String                     # Path of the file to save results
 end
 
+mutable struct MutableInt
+    val::Int
+end
+
 const INF = typemax(Int) ÷ 2
 
 @inline releasedate(data::Data, v::Int) = data.releasedates[v]
 @inline arctime(data::Data, v1::Int, v2::Int) = data.timesmatrix[v1][v2]
 @inline timesfrom(data, v) = data.times_matrix[v]
+
+@inline nvertices(::Data{V}) where {V} = V
 
 function Data(args::Vector{String})
     inputfile, outputfile, params = parseargs(args)

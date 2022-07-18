@@ -1,44 +1,40 @@
 struct GeneticAlgorithm{V}
     data::Data{V}
-    split::Split{V}
-    localsearch::LocalSearch{V}
-    population::Population{V}
     itni::Int
 
-    copied::BitArray{1} # mark if each client was copied from parent1 to offspring
+    copied::Vector{Bool} # mark if each client was copied from parent1 to offspring
 end
 
 function GeneticAlgorithm(data::Data{V}; itni::Integer = data.params.itni) where {V}
-    split = Split(data)
-    return GeneticAlgorithm{V}(data, split, LocalSearch(data, split), Population(data, split), itni, BitArray(undef, V))
+    return GeneticAlgorithm{V}(data, itni, Vector{Bool}(undef, V))
 end
 
-function run!(ga::GeneticAlgorithm{V}) where {V}
+function run!(ga::GeneticAlgorithm{V}, localsearch::LocalSearch{V}, population::Population{V}) where {V}
     maxtime = time_ns() + ga.data.params.timelimit * 1000000000
 
-    initialize!(ga.population)
+    initialize!(population)
 
     notimproved = 0
     while notimproved < ga.itni && time_ns() < maxtime
-        offspring = ordercrossover(ga)
-        split!(ga.split, offspring)
+        offspring = ordercrossover(ga, population)
+        split!(localsearch.split, offspring)
 
-        educate!(ga.localsearch, offspring)
-        improved = addindividual!(ga.population, offspring)
+        educate!(localsearch, offspring)
+        improved = addindividual!(population, offspring)
 
         if improved
             notimproved = 0
         else
             notimproved += 1
-            (notimproved % ga.data.params.itdiv == 0) && diversify!(ga.population)
+            (notimproved % ga.data.params.itdiv == 0) && diversify!(population)
         end
     end
     return nothing
 end
 
-function ordercrossover(ga::GeneticAlgorithm{V})::Individual{V} where {V}
-    parent1, parent2 = selectparents(ga.population)
-    offspring = getemptyindividual(ga.population)
+function ordercrossover(ga::GeneticAlgorithm{V}, population::Population{V})::Individual{V} where {V}
+    parent1, parent2 = selectparents(population)
+    offspring = getemptyindividual(population)
     fill!(ga.copied, false)
 
     startpos = rand(ga.data.rng, 2:V)

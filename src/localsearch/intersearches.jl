@@ -202,7 +202,7 @@ function evaluateinterroutemove(route1::Route, route2::Route)
 end
 
 function updateroutesorder!(ls::LocalSearch)
-    if ls.nb_routesorder != length(ls.routes)
+    if ls.nb_routesorder.val != length(ls.routes)
         resize!(ls.routesorder, length(ls.routes) * (length(ls.routes) - 1))
 
         pos = 1
@@ -214,7 +214,7 @@ function updateroutesorder!(ls::LocalSearch)
             end
         end
 
-        ls.nb_routesorder = length(ls.routesorder)
+        ls.nb_routesorder.val = length(ls.routesorder)
     end
 
     shuffle!(ls.data.rng, ls.routesorder)

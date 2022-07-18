@@ -1,9 +1,8 @@
-mutable struct Population{V}
+struct Population{V}
     data::Data{V}
     split::Split{V}
 
     individuals::Vector{Individual{V}}
-    bestsolution::Individual{V}
 
     searchprogress::Vector{Pair{Int,Int}}
 
@@ -22,9 +21,10 @@ function Population(data::Data{V}, split::Split{V}) where {V}
     for indiv in emptyindividuals
         indiv.closest = IndivDist{Individual{V}}[IndivDist{Individual{V}}(ind, 0) for ind in emptyindividuals]
     end
-
-    return Population{V}(data, split, individuals, Individual(data), Pair{Int,Int}[], nclosemeans, emptyindividuals)
+    return Population{V}(data, split, individuals, Pair{Int,Int}[], nclosemeans, emptyindividuals)
 end
+
+besttime(pop::Population) = pop.individuals[begin].eval
 
 function getemptyindividual(pop::Population{V}) where {V}
     indiv = pop!(pop.emptyindividuals)
@@ -66,9 +66,8 @@ function addindividual!(pop::Population{V}, indiv::Individual{V}) where {V}
         survival!(pop)
     end
 
-    # Update the best solution
-    if indiv.eval < pop.bestsolution.eval
-        pop.bestsolution = indiv
+    # Update the searchprogress
+    if pos == 1 # new best solution
         push!(pop.searchprogress, (time_ns() => indiv.eval))
         return true
     end

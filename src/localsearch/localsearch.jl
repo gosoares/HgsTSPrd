@@ -1,9 +1,8 @@
-mutable struct LocalSearch{V}
+struct LocalSearch{V}
     data::Data{V}
     split::Split{V}
 
     clients::Vector{Vertex}
-    routesPool::Vector{Route}
 
     routes::Vector{Route}
     emptyroutes::Vector{Route}
@@ -11,7 +10,7 @@ mutable struct LocalSearch{V}
     intramovesorder::Vector{Int}
     intermovesorder::Vector{Int}
     routesorder::Vector{Tuple{Int,Int}}
-    nb_routesorder::Int
+    nb_routesorder::MutableInt
 end
 
 function LocalSearch(data::Data{V}, split::Split{V}) where {V}
@@ -22,13 +21,12 @@ function LocalSearch(data::Data{V}, split::Split{V}) where {V}
         data,
         split,
         Vertex[Vertex(i) for i in 1:V],
-        Route[Route(V) for _ in 1:V],
         Route[],
-        Route[],
-        [i for i in 1:N_INTRA],
-        [i for i in 1:N_INTER],
+        Route[Route(V) for _ in 1:(V + 1)],
+        Int[i for i in 1:N_INTRA],
+        Int[i for i in 1:N_INTER],
         routesorder,
-        0,
+        MutableInt(0),
     )
 end
 
@@ -62,7 +60,7 @@ function splitsearch(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
 end
 
 function addroute!(ls::LocalSearch, pos::Integer = lastindex(ls.routes) + 1)
-    route = isempty(ls.emptyroutes) ? ls.routesPool[length(ls.routes) + 1] : pop!(ls.emptyroutes)
+    route = pop!(ls.emptyroutes)
     insert!(ls.routes, pos, route)
 
     resize!(route.clients, 2)
@@ -70,6 +68,23 @@ function addroute!(ls::LocalSearch, pos::Integer = lastindex(ls.routes) + 1)
     route[2] = route.sink
 
     return route
+end
+
+function removeroute!(ls::LocalSearch, pos::Integer)
+    push!(ls.emptyroutes, ls.routes[pos])
+    return deleteat!(ls.routes, pos)
+end
+
+function poproute!(ls::LocalSearch)
+    route = pop!(ls.routes)
+    push!(ls.emptyroutes, route)
+    return route
+end
+
+function clearroutes!(ls::LocalSearch)
+    append!(ls.emptyroutes, ls.routes)
+    empty!(ls.routes)
+    return ls
 end
 
 function updateroutesdata!(ls::LocalSearch)
@@ -95,6 +110,7 @@ function updateroutesdata!(ls::LocalSearch)
 
         for c in (lastindex(route.clients) - 1):-1:1
             route[c].successors_rd = max(route[c + 1].successors_rd, releasedate(ls.data, route[c + 1]))
+
             route[c].durationafter = arctime(ls.data, route[c], route[c + 1]) + route[c + 1].durationafter
         end
 
@@ -131,8 +147,7 @@ function updateroutesdata!(ls::LocalSearch)
 end
 
 function loadindividual!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
-    empty!(ls.routes)
-    empty!(ls.emptyroutes)
+    clearroutes!(ls)
 
     route = addroute!(ls)
     pop!(route.clients)
@@ -145,7 +160,7 @@ function loadindividual!(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
             pop!(route.clients)
         end
     end
-    pop!(ls.routes)
+    poproute!(ls)
 
     updateroutesdata!(ls)
     return nothing
