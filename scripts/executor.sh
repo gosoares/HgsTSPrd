@@ -1,31 +1,16 @@
 #!/bin/bash
 
+outputfolder=$1
+threads=$2
+
 tmux new-session -s tsprd -d
 
-outputfolder=$1
-th=$2
-
-threads=$(($th*4))
-for (( w=0; w<$th; w++ ))
+for (( ex=1; ex<=$threads; ex++ ))
 do
-    ex=$(($w*4+1))
-    tmux send-keys -t tsprd:$w "echo \"Thread ${ex}/${threads}\" && julia executor.jl ${outputfolder} ${threads} ${ex}" C-m
-
-    ex=$(($w*4+2))
-    tmux split-window -t tsprd:$w -h -p 50
-    tmux send-keys -t tsprd:$w "echo \"Thread ${ex}/${threads}\" && julia executor.jl ${outputfolder} ${threads} ${ex}" C-m
-
-    ex=$(($w*4+4))
-    tmux split-window -t tsprd:$w -v -p 50
-    tmux send-keys -t tsprd:$w "echo \"Thread ${ex}/${threads}\" && julia executor.jl ${outputfolder} ${threads} ${ex}" C-m
-
-    ex=$(($w*4+3))
-    tmux select-pane -t 0
-    tmux split-window -t tsprd:$w -v -p 50
-    tmux send-keys -t tsprd:$w "echo \"Thread ${ex}/${threads}\" && julia executor.jl ${outputfolder} ${threads} ${ex}" C-m
-
-    tmux new-window -t tsprd
+    tmux send-keys -t tsprd "echo \"Thread ${ex}/${threads}\" && julia executor.jl ${outputfolder} ${threads} ${ex}" C-m
+    tmux split-window -t tsprd -v
 done
 
-tmux kill-window -t tsprd
+tmux select-layout even-vertical
 tmux attach -t tsprd
+
