@@ -41,7 +41,7 @@ function initialize!(pop::Population{V}) where {V}
     for _ in 1:(2 * pop.data.params.mu)
         indiv = getemptyindividual(pop)
         shuffle!(pop.data.rng, view(indiv.gianttour, 2:V))
-        split!(pop.split, indiv)
+        split!(pop.split, indiv, pop.data)
         addindividual!(pop, indiv)
     end
     return pop

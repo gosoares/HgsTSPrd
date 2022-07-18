@@ -15,30 +15,33 @@ include("genetic.jl")
 
 function main(args::Vector{String})
     data = Data(args)
-
     ga = GeneticAlgorithm(data)
-    split = Split(data)
-    population = Population(data, split)
-    localsearch = LocalSearch(data, split)
+    return execute!(ga, data.outputfile)
+end
+
+function execute!(ga::GeneticAlgorithm, outputfile::String = "")
+    split = Split(ga.data)
+    population = Population(ga.data, split)
+    localsearch = LocalSearch(ga.data, split)
 
     starttime = time_ns()
     run!(ga, localsearch, population)
     exectime = time_ns() - starttime
 
-    savetofile!(data, population, starttime, exectime)
+    savetofile!(outputfile, ga.data, population, starttime, exectime)
     return nothing
 end
 
-function savetofile!(data::Data{V}, pop::Population{V}, starttime::Integer, exectime::Integer) where {V}
+function savetofile!(
+    outputfile::String, data::Data{V}, pop::Population{V}, starttime::Integer, exectime::Integer
+) where {V}
     exectime = floor(Int, exectime / 1000000)
     bestsoltime = floor(Int, (pop.searchprogress[end][1] - starttime) / 1000000)
     bestsoleval = besttime(pop)
 
-    if isempty(data.outputfile)
-        @warn "No output file informed."
-    else
-        mkpath(rsplit(data.outputfile, '/'; limit = 2)[1])
-        open(data.outputfile, "w") do f
+    if !isempty(outputfile)
+        mkpath(rsplit(outputfile, '/'; limit = 2)[1])
+        open(outputfile, "w") do f
             write(f, "EXEC_TIME $exectime\n")
             write(f, "SOL_TIME $bestsoltime\n")
             write(f, "OBJ $bestsoleval\n")
@@ -54,7 +57,7 @@ function savetofile!(data::Data{V}, pop::Population{V}, starttime::Integer, exec
     return nothing
 end
 
-export main, warmup, savetofile!
+export main, execute!, savetofile!
 export Data
 export GeneticAlgorithm, run!, ordercrossover
 export Split, split!

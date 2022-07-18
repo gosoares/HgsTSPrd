@@ -1,12 +1,10 @@
 struct GeneticAlgorithm{V}
     data::Data{V}
-    itni::Int
-
     copied::Vector{Bool} # mark if each client was copied from parent1 to offspring
 end
 
-function GeneticAlgorithm(data::Data{V}; itni::Integer = data.params.itni) where {V}
-    return GeneticAlgorithm{V}(data, itni, Vector{Bool}(undef, V))
+function GeneticAlgorithm(data::Data{V}) where {V}
+    return GeneticAlgorithm{V}(data, Vector{Bool}(undef, V))
 end
 
 function run!(ga::GeneticAlgorithm{V}, localsearch::LocalSearch{V}, population::Population{V}) where {V}
@@ -15,9 +13,9 @@ function run!(ga::GeneticAlgorithm{V}, localsearch::LocalSearch{V}, population::
     initialize!(population)
 
     notimproved = 0
-    while notimproved < ga.itni && time_ns() < maxtime
+    while notimproved < ga.data.params.itni && time_ns() < maxtime
         offspring = ordercrossover(ga, population)
-        split!(localsearch.split, offspring)
+        split!(localsearch.split, offspring, ga.data)
 
         educate!(localsearch, offspring)
         improved = addindividual!(population, offspring)

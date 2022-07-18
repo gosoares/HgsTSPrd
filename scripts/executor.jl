@@ -1,23 +1,30 @@
-using HgsTSPrd, Printf
+using HgsTSPrd, Printf, Logging
 
-function tsprd_execute(outputfolder::String)
+"""
+    tsprd_execute(outputfolder, threads, threadid)
+
+Execute all TSPrd instances, saving the results in `outputfolder`
+The variables `threads` and `threadid` is used to split the instances between threads.
+"""
+function tsprd_execute(outputfolder::String, threads::Int, threadid::Int)
     mkpath(outputfolder)
     run(pipeline(`git rev-parse HEAD`; stdout = joinpath(outputfolder, "git.commit"))) # save git commit hash to file
 
     instanceids = getinstancesids()
+    sort!(instanceids; by = iid -> iid.N)
+    instanceids = [instanceids[i] for i in threadid:threads:lastindex(instanceids)] # instances for this thread
 
     println(" Executed  |   Time   | Last Instance")
     currentelement = 0
     startime = time_ns()
     ninstances = length(instanceids)
 
-    Threads.@threads for instanceid in instanceids
+    for instanceid in instanceids
         runinstance(instanceid, outputfolder)
 
-        instancename = "$(instanceid.instanceset)/$(instanceid.name)_$(instanceid.beta) $(instanceid.execid)"
+        instancename = "$(instanceid.instanceset)/$(instanceid.name)_$(instanceid.beta)"
         currenttime = (time_ns() - startime) / 1000000000
         currentelement += 1
-
         @printf(
             "\r %4d/%4d | %02d:%02d:%02d | %s                  ",
             currentelement,
@@ -39,28 +46,27 @@ struct InstanceID
     name::String
     N::Int
     beta::String
-    execid::Int
 
-    function InstanceID(iset::String, name::String, beta::String, execid::Int)
+    function InstanceID(iset::String, name::String, beta::String)
         N = parse(Int, match(r"\d+", name).match)
-        return new(iset, name, N, beta, execid)
+        return new(iset, name, N, beta)
     end
 end
 
 function runinstance(instanceid::InstanceID, outputfolder::String)
     instance_str = "$(instanceid.instanceset)/$(instanceid.name)_$(instanceid.beta)"
     inputfile = "../instances/$instance_str.dat"
-    outputfile = joinpath(outputfolder, "$(instance_str)_$(instanceid.execid).txt")
-    isfile(outputfile) && return nothing
-
-    data = Data(String[inputfile, "-o", outputfile, "-t", string(TIME_LIMIT)])
-    warmup(data)
-
-    starttime = time_ns()
+    data = Data(String[inputfile, "-t", string(TIME_LIMIT)])
     ga = GeneticAlgorithm(data)
-    run!(ga)
 
-    savetofile!(data, ga, starttime; print = false)
+    execute!(ga) # warmup for compilation
+
+    for execid in 1:10
+        outputfile = joinpath(outputfolder, "$(instance_str)_$(execid).txt")
+        isfile(outputfile) && continue # already executed
+        execute!(ga, outputfile)
+    end
+
     return nothing
 end
 
@@ -77,18 +83,24 @@ function getinstancesids()
     all_instances = Iterators.flatten([solomon_instances, atsplib_instances, tsplib_instances])
     betas = ["0.5", "1", "1.5", "2", "2.5", "3"]
 
-    return [
-        InstanceID(instanceset, name, beta, e) for (instanceset, name) in all_instances for beta in betas for e in 1:10
-    ]
+    return [InstanceID(instanceset, name, beta) for (instanceset, name) in all_instances for beta in betas]
 end
 
-if length(ARGS) != 1
-    @warn("Inform the output folder")
+if length(ARGS) != 3
+    @warn("Usage: executor.jl output_folder nthreads threadid")
     exit(1)
 elseif !isdirpath("$(ARGS[1])/")
     @warn("\"$(ARGS[1])\" is not a valid folder.")
     exit(1)
 end
-tsprd_execute(ARGS[1])
 
-# HgsTSPrd.main(ARGS)
+threads = parse(Int, ARGS[2])
+threadid = parse(Int, ARGS[3])
+
+if (threadid > threads)
+    @warn "Invalid thread id $threadid for $threads threads."
+    exit(1)
+end
+
+disable_logging(Logging.Info)
+tsprd_execute(ARGS[1], threads, threadid)

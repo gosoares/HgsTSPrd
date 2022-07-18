@@ -54,7 +54,7 @@ end
 function splitsearch(ls::LocalSearch{V}, indiv::Individual{V}) where {V}
     prevtime = indiv.eval
     savegianttour!(ls, indiv)
-    split!(ls.split, indiv)
+    split!(ls.split, indiv, ls.data)
     loadindividual!(ls, indiv)
     return indiv.eval < prevtime
 end

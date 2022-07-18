@@ -1,6 +1,4 @@
 struct Split{V}
-    data::Data{V}
-
     # stores for each position in the big tour which of the previous
     # positions has the first vertex with bigger release date
     rdpos::Vector{Int}
@@ -15,23 +13,23 @@ struct Split{V}
     phi::Vector{Int}
 end
 
-function Split(data::Data{V}) where {V}
-    return Split{V}(data, Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V))
+function Split(::Data{V}) where {V}
+    return Split{V}(Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V), Vector{Int}(undef, V))
 end
 
-function split!(split::Split{V}, indiv::Individual{V}) where {V}
-    load!(split, indiv)
+function split!(split::Split{V}, indiv::Individual{V}, data::Data{V}) where {V}
+    load!(split, indiv, data)
 
     fill!(split.phi, INF)
 
     for j in 2:V
         rdposj = split.rdpos[j]
-        jtodepot = arctime(split.data, indiv[j], 1)
+        jtodepot = arctime(data, indiv[j], 1)
         cumulj = split.cumulative[j]
-        sigma = releasedate(split.data, indiv[rdposj])
+        sigma = releasedate(data, indiv[rdposj])
 
         for i in 2:split.rdpos[j]
-            deltaj = sigma + arctime(split.data, 1, indiv[i]) + (cumulj - split.cumulative[i]) + jtodepot
+            deltaj = sigma + arctime(data, 1, indiv[i]) + (cumulj - split.cumulative[i]) + jtodepot
             if deltaj < split.phi[j]
                 split.phi[j] = deltaj
                 split.bestin[j] = i
@@ -43,15 +41,15 @@ function split!(split::Split{V}, indiv::Individual{V}) where {V}
     return save!(split, indiv)
 end
 
-@inline function load!(split::Split{V}, indiv::Individual{V}) where {V}
+@inline function load!(split::Split{V}, indiv::Individual{V}, data::Data{V}) where {V}
     rdpos = 2
     split.rdpos[2] = rdpos
     split.cumulative[2] = 0
 
     for c in 3:V
-        (releasedate(split.data, indiv[c]) > releasedate(split.data, indiv[rdpos])) && (rdpos = c)
+        (releasedate(data, indiv[c]) > releasedate(data, indiv[rdpos])) && (rdpos = c)
         split.rdpos[c] = rdpos
-        split.cumulative[c] = split.cumulative[c - 1] + arctime(split.data, indiv[c - 1], indiv[c])
+        split.cumulative[c] = split.cumulative[c - 1] + arctime(data, indiv[c - 1], indiv[c])
     end
     return nothing
 end
